@@ -42,9 +42,11 @@ Run all from `backend/`:
 |---------|-------------|
 | `go run ./cmd/server` | Start dev server on :8080 |
 | `go test ./...` | Run all tests |
+| `go test -run Integration ./...` | Run only integration tests |
 | `sqlc generate` | Regenerate `backend/db/sqlc/` from `backend/db/query/` |
 | `migrate -path db/migrations -database "$DB_URL" up` | Apply migrations |
 | `swag init -g ./cmd/server/main.go --output ./docs` | Regenerate swagger docs from handler annotations |
+| `go run ./cmd/seed` | Seed database with sample data |
 | `go mod tidy` | Sync Go module dependencies |
 
 The entrypoint is `backend/cmd/server/main.go` — wires config → DB pool → repositories → services → HTTP router.
@@ -102,7 +104,7 @@ Run from repo root (or via `pnpm --filter <package>`):
 - Room, Reservation, Team, Seat, User, CrossTeamRequest: all fully wired end-to-end
 - Auth/Role middleware: wired to `/api/v1` routes, stub identity until Phase 6
 - Swagger: `/swagger/index.html` serves browsable API docs (20 paths documented)
-- **Phase 2 complete**: Turborepo + pnpm workspaces. Frontend apps moved to `apps/`, shared packages in `packages/`. TypeScript types auto-generated from backend DTOs via openapi-typescript. Shared tsconfig + tailwind preset.
+- Phase 2 complete: Turborepo + pnpm workspaces. Frontend apps moved to `apps/`, shared packages in `packages/`. TypeScript types auto-generated from backend DTOs via openapi-typescript. Shared tsconfig + tailwind preset.
+- **Phase 3 complete**: Seed script (`make seed`), test DB setup in `make test`, 136 passing tests (28 domain + 59 service + 49 integration)
 - Both frontends: SolidJS scaffold with placeholders for all feature pages, no API layer yet
-- Zero tests anywhere
 - Next steps: see `roadmap.md`

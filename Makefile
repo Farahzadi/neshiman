@@ -1,6 +1,7 @@
 DB_URL ?= postgres://postgres:postgres@localhost:5432/neshiman?sslmode=disable
+TEST_DB_URL ?= postgres://postgres:postgres@localhost:5432/neshiman_test?sslmode=disable
 
-.PHONY: setup deps db-up db-wait db-migrate db-codegen swagger-gen types-gen dev build test lint clean
+.PHONY: setup deps db-up db-wait db-migrate db-codegen swagger-gen types-gen dev build test lint clean seed test-db db-test
 
 check-docker:
 	$(call check_tool,docker)
@@ -53,6 +54,9 @@ db-migrate:
 	$(call check_tool,migrate)
 	migrate -path backend/db/migrations -database "$(DB_URL)" up
 
+seed:
+	cd backend && go run ./cmd/seed/
+
 swagger-gen:
 	cd backend && swag init -g ./cmd/server/main.go --output ./docs
 
@@ -86,8 +90,12 @@ build: check-go
 	cd backend && go build -o server ./cmd/server
 	pnpm turbo build
 
-test: check-go
-	cd backend && go test ./...
+db-test-setup:
+	docker compose exec -T postgres psql -U postgres -c "CREATE DATABASE neshiman_test" 2>/dev/null || true
+	migrate -path backend/db/migrations -database "$(TEST_DB_URL)" up
+
+test: check-go db-test-setup
+	cd backend && DB_URL="$(TEST_DB_URL)" go test ./... -count=1
 	pnpm turbo test
 
 lint: check-go

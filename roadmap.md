@@ -41,10 +41,10 @@ Extract common code into a shared package used by both frontends, using Turborep
 
 ## Phase 3 — Seed Data & Test Fixtures
 
-- [ ] **Seed script** — Populate DB with sample rooms, teams, users, seats, reservations
-- [ ] **Backend test helpers** — Test DB setup/teardown utilities
-- [ ] **Backend unit tests** — Domain logic, application services
-- [ ] **Backend integration tests** — Repository tests against real Postgres
+- [x] **Seed script** — `backend/cmd/seed/` populates DB with sample rooms, teams, users (all roles), seats, reservations, cross-team requests
+- [x] **Backend test helpers** — `TestMain` with pool setup, `truncate()`, manual mock implementations for all 6 repository interfaces
+- [x] **Backend unit tests** — 28 domain tests, 59 application service tests (87 total)
+- [x] **Backend integration tests** — 49 repository tests against real Postgres (136 total across all packages)
 
 ## Phase 4 — Frontend Admin
 
