@@ -14,9 +14,14 @@ make dev      # Start all services (postgres + backend + both frontends)
 ## Monorepo Layout
 
 - `backend/` — Go service, hexagonal architecture, PostgreSQL, sqlc
-- `frontend-admin/` — SolidJS app (admin management UI)
-- `frontend-viewer/` — SolidJS app (seat reservation UI)
+- `apps/admin/` — SolidJS app (admin management UI) [@neshiman/admin]
+- `apps/viewer/` — SolidJS app (seat reservation UI) [@neshiman/viewer]
+- `packages/api-types/` — Auto-generated TypeScript types from backend Swagger spec [@neshiman/api-types]
+- `packages/tsconfig/` — Shared TypeScript base configs [@neshiman/tsconfig]
+- `packages/tailwind-config/` — Shared TailwindCSS preset [@neshiman/tailwind-config]
 - `docker-compose.yml` — production orchestration
+- `turbo.json` — Turborepo pipeline config
+- `pnpm-workspace.yaml` — pnpm workspace definition
 
 ## Key Decisions
 
@@ -24,8 +29,10 @@ make dev      # Start all services (postgres + backend + both frontends)
 - **sqlc**: Generates Go structs from SQL queries. Never edit generated files; modify `.sql` sources in `backend/db/query/` and re-run `sqlc generate`.
 - **Frontend**: SolidJS ≠ React. Use signals (`createSignal`), stores (`createStore`), no virtual DOM diffing. JSX compiles to real DOM.
 - **Code quality**: ESLint + Prettier enforced via git hooks. Run lint/format before committing.
-- **Swagger**: Use `swaggo/swag` for OpenAPI spec generation from Go handler annotations. Serves `/swagger/index.html` in dev.
-- **Turborepo**: Frontend monorepo tool for shared packages. Standard layout: `apps/` (admin, viewer) + `packages/` (shared, tsconfig, tailwind-config).
+- **Swagger**: Use `swaggo/swag` for Swagger 2.0 spec generation from Go handler annotations. Serves `/swagger/index.html` in dev.
+- **Turborepo + pnpm**: Frontend monorepo via pnpm workspaces + Turborepo. Root `package.json` has `packageManager: pnpm@9.15.0`. All frontend commands run at root via `pnpm turbo <task>`. Lockfile: `pnpm-lock.yaml`.
+- **openapi-typescript**: Generates TypeScript types from `backend/docs/swagger.json` into `packages/api-types/src/v1.d.ts`. Regenerate with `make types-gen` or `pnpm generate:types`.
+- **Shared packages**: `@neshiman/api-types` (types), `@neshiman/tsconfig` (base tsconfig), `@neshiman/tailwind-config` (Tailwind preset). Imported via `workspace:*` protocol.
 
 ## Backend Commands
 
@@ -44,16 +51,18 @@ The entrypoint is `backend/cmd/server/main.go` — wires config → DB pool → 
 
 ## Frontend Commands
 
-Run from each frontend app directory:
+Run from repo root (or via `pnpm --filter <package>`):
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Dev server (admin: :3000, viewer: :3001) |
-| `npm run build` | Production build to `dist/` |
-| `npm run test` | Vitest |
-| `npm run lint` | ESLint |
-| `npm run format` | Prettier |
-| `npm run typecheck` | `tsc --noEmit` |
+| `pnpm turbo dev` | Start both dev servers (admin: :3000, viewer: :3001) |
+| `pnpm turbo build` | Build all apps to `dist/` |
+| `pnpm turbo test` | Run Vitest in all apps |
+| `pnpm turbo lint` | ESLint across all apps |
+| `pnpm turbo typecheck` | `tsc --noEmit` across all apps |
+| `pnpm --filter @neshiman/api-types generate` | Regenerate API types from swagger.json |
+| `pnpm --filter <app> dev` | Dev server for a single app |
+| `pnpm --filter <app> <script>` | Run any script in a specific app |
 
 ## Agent Notes
 
@@ -62,6 +71,9 @@ Run from each frontend app directory:
 - **Domain pure**: `internal/domain/` imports nothing outside stdlib. No DB, no HTTP.
 - **Wiring only in main.go**: `cmd/server/main.go` is the composition root — the only place concrete types cross package boundaries.
 - **Swagger**: Annotate new handlers with `@Summary`, `@Tags`, `@Param`, `@Success`, `@Router` comments. Regenerate with `make swagger-gen` or `swag init` from `backend/`.
+- **openapi-typescript**: After swagger-gen, run `make types-gen` (or `pnpm generate:types`) to regenerate TypeScript types from the updated swagger.json. Generated file `packages/api-types/src/v1.d.ts` is committed.
+- **Turborepo pipeline**: `build` depends on `^build` so `api-types` compiles before apps that depend on it. `dev` is persistent (no caching).
+- **pnpm**: Enable via `corepack enable`. Workspaces are defined in `pnpm-workspace.yaml`. Use `workspace:*` protocol for local deps.
 - **Seat geometry**: Rectangular (not triangular). Grid-based room layout.
 - **Memberships**: Non-overlapping. A user belongs to exactly one team.
 - **Reservations**: Per-day, one person per seat. Weekly limit configurable per user by team admin.
@@ -82,6 +94,7 @@ Run from each frontend app directory:
 - **Frontend viewer** (`frontend-viewer/`): SolidJS + Vite + TailwindCSS + TypeScript scaffold
   - Pages: Dashboard, Reservations (placeholder)
 - **Tooling**: Root Makefile, AGENTS.md, SPEC.md (updated), .gitignore, .editorconfig
+- **Frontend monorepo**: Turborepo + pnpm workspaces, 3 shared packages (`api-types`, `tsconfig`, `tailwind-config`)
 
 ### Current state
 - `go build` + `go vet` pass across all packages
@@ -89,6 +102,7 @@ Run from each frontend app directory:
 - Room, Reservation, Team, Seat, User, CrossTeamRequest: all fully wired end-to-end
 - Auth/Role middleware: wired to `/api/v1` routes, stub identity until Phase 6
 - Swagger: `/swagger/index.html` serves browsable API docs (20 paths documented)
-- Both frontends: SolidJS scaffold with placeholders for all feature pages, no API layer
+- **Phase 2 complete**: Turborepo + pnpm workspaces. Frontend apps moved to `apps/`, shared packages in `packages/`. TypeScript types auto-generated from backend DTOs via openapi-typescript. Shared tsconfig + tailwind preset.
+- Both frontends: SolidJS scaffold with placeholders for all feature pages, no API layer yet
 - Zero tests anywhere
 - Next steps: see `roadmap.md`

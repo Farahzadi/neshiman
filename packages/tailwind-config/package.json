@@ -1,0 +1,9 @@
+{
+  "name": "@neshiman/tailwind-config",
+  "private": true,
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  }
+}

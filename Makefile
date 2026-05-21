@@ -1,6 +1,6 @@
 DB_URL ?= postgres://postgres:postgres@localhost:5432/neshiman?sslmode=disable
 
-.PHONY: setup deps db-up db-wait db-migrate db-codegen dev build test lint clean
+.PHONY: setup deps db-up db-wait db-migrate db-codegen swagger-gen types-gen dev build test lint clean
 
 check-docker:
 	$(call check_tool,docker)
@@ -8,8 +8,8 @@ check-docker:
 check-go:
 	$(call check_tool,go)
 
-check-npm:
-	$(call check_tool,npm)
+check-pnpm:
+	$(call check_tool,pnpm)
 
 define check_tool
 	@if ! command -v $(1) >/dev/null 2>&1; then \
@@ -17,21 +17,19 @@ define check_tool
 		case "$(1)" in \
 			migrate) echo "  Install: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest" ;; \
 			sqlc)    echo "  Install: go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest" ;; \
+			pnpm)   echo "  Install: enable via corepack, or brew install pnpm" ;; \
 			*)       echo "  Install using your package manager." ;; \
 		esac; \
 		exit 1; \
 	fi
 endef
 
-setup: check-docker check-go check-npm db-up db-wait db-migrate db-codegen deps
+setup: check-docker check-go db-up db-wait db-migrate db-codegen deps
 	@echo "Setup complete."
 
 deps:
 	$(call check_tool,go)
-	$(call check_tool,npm)
-	cd backend && go mod download
-	cd frontend-admin && npm install
-	cd frontend-viewer && npm install
+	pnpm install
 
 db-up:
 	$(call check_tool,docker)
@@ -58,6 +56,9 @@ db-migrate:
 swagger-gen:
 	cd backend && swag init -g ./cmd/server/main.go --output ./docs
 
+types-gen: swagger-gen
+	pnpm generate:types
+
 db-migrate-down:
 	$(call check_tool,migrate)
 	migrate -path backend/db/migrations -database "$(DB_URL)" down $(filter-out $@,$(MAKECMDGOALS))
@@ -66,14 +67,12 @@ db-codegen:
 	$(call check_tool,sqlc)
 	cd backend && sqlc generate
 
-dev: check-docker check-go check-npm db-up db-wait db-migrate
+dev: check-docker check-go db-up db-wait db-migrate
 	@trap 'kill 0 2>/dev/null; exit' INT TERM; \
 	echo "Starting backend..."; \
 	cd backend && go run ./cmd/server & \
-	echo "Starting frontend-admin..."; \
-	cd frontend-admin && npm run dev & \
-	echo "Starting frontend-viewer..."; \
-	cd frontend-viewer && npm run dev & \
+	echo "Starting frontend apps via Turborepo..."; \
+	pnpm turbo dev & \
 	echo ""; \
 	echo "--- Services ---"; \
 	echo "  Backend:       http://localhost:8080"; \
@@ -83,24 +82,25 @@ dev: check-docker check-go check-npm db-up db-wait db-migrate
 	echo "-----------------"; \
 	wait
 
-build: check-go check-npm
+build: check-go
 	cd backend && go build -o server ./cmd/server
-	cd frontend-admin && npm run build
-	cd frontend-viewer && npm run build
+	pnpm turbo build
 
-test: check-go check-npm
+test: check-go
 	cd backend && go test ./...
-	cd frontend-admin && npm run test
-	cd frontend-viewer && npm run test
+	pnpm turbo test
 
-lint: check-go check-npm
+lint: check-go
 	cd backend && go vet ./...
-	cd frontend-admin && npm run lint
-	cd frontend-viewer && npm run lint
+	pnpm turbo lint
 
 clean:
 	rm -f backend/server
-	rm -rf frontend-admin/dist
-	rm -rf frontend-viewer/dist
-	rm -rf frontend-admin/node_modules
-	rm -rf frontend-viewer/node_modules
+	rm -rf apps/admin/dist
+	rm -rf apps/viewer/dist
+	rm -rf packages/*/dist
+	rm -rf packages/api-types/src/v1.d.ts
+	rm -rf node_modules
+	rm -rf apps/admin/node_modules
+	rm -rf apps/viewer/node_modules
+	rm -rf packages/*/node_modules

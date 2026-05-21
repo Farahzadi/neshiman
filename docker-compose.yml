@@ -30,8 +30,8 @@ services:
 
   frontend-admin:
     build:
-      context: ./frontend-admin
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/admin/Dockerfile
     ports:
       - "3000:80"
     depends_on:
@@ -39,8 +39,8 @@ services:
 
   frontend-viewer:
     build:
-      context: ./frontend-viewer
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/viewer/Dockerfile
     ports:
       - "3001:80"
     depends_on:

@@ -31,13 +31,13 @@ Add API documentation with a browsable Swagger UI in development.
 
 Extract common code into a shared package used by both frontends, using Turborepo.
 
-- [ ] **Turborepo setup** — Root `turbo.json`, root `package.json` with workspaces
-- [ ] **Create `packages/shared/`** — API client, TypeScript types matching backend DTOs, fetch wrapper, shared utilities
-- [ ] **Create `packages/tsconfig/`** — Shared TypeScript config (optional)
-- [ ] **Create `packages/tailwind-config/`** — Shared Tailwind preset (optional)
-- [ ] **Migrate both apps into workspace** — `apps/admin/`, `apps/viewer/` (rename from `frontend-admin/`, `frontend-viewer/`)
-- [ ] **Import from `@neshiman/shared`** in both frontend apps
-- [ ] **Define API types** matching backend DTOs (`dto/request.go`, `dto/response.go`)
+- [x] **Turborepo setup** — Root `turbo.json`, root `package.json` with workspaces
+- [x] **Create `packages/api-types/`** — Auto-generated TypeScript types from backend Swagger spec via openapi-typescript
+- [x] **Create `packages/tsconfig/`** — Shared TypeScript base config
+- [x] **Create `packages/tailwind-config/`** — Shared TailwindCSS preset
+- [x] **Migrate both apps into workspace** — `apps/admin/`, `apps/viewer/` (renamed from `frontend-admin/`, `frontend-viewer/`)
+- [x] **Import from `@neshiman/api-types`** in both frontend apps
+- [x] **Define API types** — Auto-generated from `backend/docs/swagger.json` via openapi-typescript v5
 
 ## Phase 3 — Seed Data & Test Fixtures
 
