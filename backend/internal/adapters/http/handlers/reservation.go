@@ -23,6 +23,20 @@ func NewReservationHandler(reservationSvc *application.ReservationService) *Rese
 	return &ReservationHandler{reservationSvc: reservationSvc}
 }
 
+// CreateReservation creates a new seat reservation
+// @Summary      Create a reservation
+// @Tags         Reservations
+// @Accept       json
+// @Produce      json
+// @Param        request body dto.CreateReservationRequest true "Reservation details"
+// @Success      201  {object}  dto.ReservationResponse
+// @Failure      400  {string}  string
+// @Failure      401  {string}  string
+// @Failure      403  {string}  string
+// @Failure      404  {string}  string
+// @Failure      409  {string}  string
+// @Failure      429  {string}  string
+// @Router       /reservations [post]
 func (h *ReservationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateReservationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -63,6 +77,15 @@ func (h *ReservationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, dto.ReservationToResponse(reservation))
 }
 
+// CancelReservation cancels a reservation
+// @Summary      Cancel a reservation
+// @Tags         Reservations
+// @Param        id   path      string  true  "Reservation ID"
+// @Success      204  {string}  string
+// @Failure      401  {string}  string
+// @Failure      403  {string}  string
+// @Failure      404  {string}  string
+// @Router       /reservations/{id} [delete]
 func (h *ReservationHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.UserIDFromContext(r.Context())
 	if userID == uuid.Nil {
@@ -87,6 +110,13 @@ func (h *ReservationHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// GetUserWeekReservations returns a user's reservations for a given week
+// @Summary      Get weekly reservations
+// @Tags         Reservations
+// @Produce      json
+// @Param        date  query     string  false  "Date in YYYY-MM-DD format (defaults to today)"
+// @Success      200   {array}   dto.ReservationResponse
+// @Router       /reservations/week [get]
 func (h *ReservationHandler) GetWeek(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.UserIDFromContext(r.Context())
 	if userID == uuid.Nil {

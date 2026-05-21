@@ -19,6 +19,15 @@ func NewRoomHandler(roomSvc *application.RoomService) *RoomHandler {
 	return &RoomHandler{roomSvc: roomSvc}
 }
 
+// CreateRoom creates a new room
+// @Summary      Create a room
+// @Tags         Rooms
+// @Accept       json
+// @Produce      json
+// @Param        request body dto.CreateRoomRequest true "Room details"
+// @Success      201  {object}  dto.RoomResponse
+// @Failure      400  {string}  string
+// @Router       /rooms [post]
 func (h *RoomHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateRoomRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -33,6 +42,12 @@ func (h *RoomHandler) Create(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, dto.RoomToResponse(room))
 }
 
+// ListRooms returns all rooms
+// @Summary      List rooms
+// @Tags         Rooms
+// @Produce      json
+// @Success      200  {array}   dto.RoomResponse
+// @Router       /rooms [get]
 func (h *RoomHandler) List(w http.ResponseWriter, r *http.Request) {
 	rooms, err := h.roomSvc.ListRooms(r.Context())
 	if err != nil {
@@ -46,6 +61,14 @@ func (h *RoomHandler) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, responses)
 }
 
+// GetRoomByID returns a room by ID
+// @Summary      Get a room by ID
+// @Tags         Rooms
+// @Produce      json
+// @Param        id   path      string  true  "Room ID"
+// @Success      200  {object}  dto.RoomResponse
+// @Failure      404  {string}  string
+// @Router       /rooms/{id} [get]
 func (h *RoomHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -60,6 +83,16 @@ func (h *RoomHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, dto.RoomToResponse(room))
 }
 
+// UpdateRoom updates a room
+// @Summary      Update a room
+// @Tags         Rooms
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string                true  "Room ID"
+// @Param        request  body      dto.UpdateRoomRequest  true  "Room details"
+// @Success      200      {object}  dto.RoomResponse
+// @Failure      400      {string}  string
+// @Router       /rooms/{id} [put]
 func (h *RoomHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -79,6 +112,13 @@ func (h *RoomHandler) Update(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, dto.RoomToResponse(room))
 }
 
+// DeleteRoom deletes a room
+// @Summary      Delete a room
+// @Tags         Rooms
+// @Param        id   path      string  true  "Room ID"
+// @Success      204  {string}  string
+// @Failure      500  {string}  string
+// @Router       /rooms/{id} [delete]
 func (h *RoomHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {

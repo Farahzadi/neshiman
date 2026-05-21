@@ -1,0 +1,865 @@
+basePath: /api/v1
+definitions:
+  dto.CreateCrossTeamRequestRequest:
+    properties:
+      date:
+        description: YYYY-MM-DD
+        type: string
+      target_seat_id:
+        type: string
+    type: object
+  dto.CreateReservationRequest:
+    properties:
+      date:
+        description: YYYY-MM-DD
+        type: string
+      seat_id:
+        type: string
+    type: object
+  dto.CreateRoomRequest:
+    properties:
+      grid_height:
+        type: integer
+      grid_width:
+        type: integer
+      name:
+        type: string
+    type: object
+  dto.CreateSeatRequest:
+    properties:
+      label:
+        type: string
+      pos_x:
+        type: integer
+      pos_y:
+        type: integer
+      room_id:
+        type: string
+      rotation:
+        type: integer
+      team_id:
+        type: string
+    type: object
+  dto.CreateTeamRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  dto.CreateUserRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      role:
+        type: string
+      team_id:
+        type: string
+      weekly_limit:
+        type: integer
+    type: object
+  dto.CrossTeamRequestResponse:
+    properties:
+      date:
+        type: string
+      id:
+        type: string
+      requesting_user_id:
+        type: string
+      status:
+        type: string
+      target_seat_id:
+        type: string
+    type: object
+  dto.MoveSeatRequest:
+    properties:
+      pos_x:
+        type: integer
+      pos_y:
+        type: integer
+    type: object
+  dto.ReservationResponse:
+    properties:
+      date:
+        type: string
+      id:
+        type: string
+      seat_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  dto.RoomResponse:
+    properties:
+      created_at:
+        type: string
+      grid_height:
+        type: integer
+      grid_width:
+        type: integer
+      id:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.RotateSeatRequest:
+    properties:
+      rotation:
+        type: integer
+    type: object
+  dto.SeatResponse:
+    properties:
+      id:
+        type: string
+      label:
+        type: string
+      pos_x:
+        type: integer
+      pos_y:
+        type: integer
+      room_id:
+        type: string
+      rotation:
+        type: integer
+      team_id:
+        type: string
+    type: object
+  dto.TeamResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  dto.UpdateRoomRequest:
+    properties:
+      grid_height:
+        type: integer
+      grid_width:
+        type: integer
+      name:
+        type: string
+    type: object
+  dto.UpdateWeeklyLimitRequest:
+    properties:
+      weekly_limit:
+        type: integer
+    type: object
+  dto.UserResponse:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      role:
+        type: string
+      team_id:
+        type: string
+      weekly_limit:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Seat plan management system
+  title: Neshiman API
+  version: "1.0"
+paths:
+  /cross-team-requests:
+    get:
+      parameters:
+      - description: Status (pending/approved/rejected)
+        in: query
+        name: status
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.CrossTeamRequestResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: List requests by status
+      tags:
+      - CrossTeamRequests
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateCrossTeamRequestRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.CrossTeamRequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Create a cross-team request
+      tags:
+      - CrossTeamRequests
+  /cross-team-requests/{id}:
+    get:
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CrossTeamRequestResponse'
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      summary: Get a cross-team request by ID
+      tags:
+      - CrossTeamRequests
+  /cross-team-requests/{id}/approve:
+    put:
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CrossTeamRequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Approve a cross-team request
+      tags:
+      - CrossTeamRequests
+  /cross-team-requests/{id}/reject:
+    put:
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CrossTeamRequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Reject a cross-team request
+      tags:
+      - CrossTeamRequests
+  /cross-team-requests/pending-by-team:
+    get:
+      parameters:
+      - description: Team ID
+        in: query
+        name: team_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.CrossTeamRequestResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: List pending requests by team
+      tags:
+      - CrossTeamRequests
+  /reservations:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Reservation details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateReservationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.ReservationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "409":
+          description: Conflict
+          schema:
+            type: string
+        "429":
+          description: Too Many Requests
+          schema:
+            type: string
+      summary: Create a reservation
+      tags:
+      - Reservations
+  /reservations/{id}:
+    delete:
+      parameters:
+      - description: Reservation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      summary: Cancel a reservation
+      tags:
+      - Reservations
+  /reservations/week:
+    get:
+      parameters:
+      - description: Date in YYYY-MM-DD format (defaults to today)
+        in: query
+        name: date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ReservationResponse'
+            type: array
+      summary: Get weekly reservations
+      tags:
+      - Reservations
+  /rooms:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.RoomResponse'
+            type: array
+      summary: List rooms
+      tags:
+      - Rooms
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Room details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateRoomRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.RoomResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Create a room
+      tags:
+      - Rooms
+  /rooms/{id}:
+    delete:
+      parameters:
+      - description: Room ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete a room
+      tags:
+      - Rooms
+    get:
+      parameters:
+      - description: Room ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.RoomResponse'
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      summary: Get a room by ID
+      tags:
+      - Rooms
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Room ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Room details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateRoomRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.RoomResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Update a room
+      tags:
+      - Rooms
+  /seats:
+    get:
+      parameters:
+      - description: Room ID
+        in: query
+        name: room_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.SeatResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: List seats by room
+      tags:
+      - Seats
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Seat details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateSeatRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.SeatResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Create a seat
+      tags:
+      - Seats
+  /seats/{id}:
+    delete:
+      parameters:
+      - description: Seat ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+      summary: Delete a seat
+      tags:
+      - Seats
+    get:
+      parameters:
+      - description: Seat ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SeatResponse'
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      summary: Get a seat by ID
+      tags:
+      - Seats
+  /seats/{id}/move:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Seat ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New position
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.MoveSeatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SeatResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Move a seat
+      tags:
+      - Seats
+  /seats/{id}/rotate:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Seat ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Rotation
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RotateSeatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SeatResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Rotate a seat
+      tags:
+      - Seats
+  /teams:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.TeamResponse'
+            type: array
+      summary: List teams
+      tags:
+      - Teams
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Team name
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateTeamRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.TeamResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Create a team
+      tags:
+      - Teams
+  /teams/{id}:
+    delete:
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+      summary: Delete a team
+      tags:
+      - Teams
+    get:
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TeamResponse'
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      summary: Get a team by ID
+      tags:
+      - Teams
+  /users:
+    get:
+      parameters:
+      - description: Team ID
+        in: query
+        name: team_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.UserResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: List users by team
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Create a user
+      tags:
+      - Users
+  /users/{id}:
+    delete:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+      summary: Delete a user
+      tags:
+      - Users
+    get:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      summary: Get a user by ID
+      tags:
+      - Users
+  /users/{id}/weekly-limit:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Weekly limit
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateWeeklyLimitRequest'
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Update weekly limit
+      tags:
+      - Users
+  /users/by-email:
+    get:
+      parameters:
+      - description: User email
+        in: query
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      summary: Get a user by email
+      tags:
+      - Users
+swagger: "2.0"

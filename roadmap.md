@@ -22,10 +22,10 @@ Finish wiring all core entities end-to-end (domain → port → postgres → ser
 
 Add API documentation with a browsable Swagger UI in development.
 
-- [ ] **Integrate swaggo/swag** — Generate OpenAPI spec from Go handler annotations
-- [ ] **Swagger UI endpoint** — Serve `/swagger/index.html` in dev mode (chi route)
-- [ ] **Annotate all handlers** — Add `@Summary`, `@Tags`, `@Param`, `@Success`, `@Router` comments to each handler
-- [ ] **DTO schemas** — Ensure request/response types are documented for Swagger output
+- [x] **Integrate swaggo/swag** — Generate OpenAPI spec from Go handler annotations
+- [x] **Swagger UI endpoint** — Serve `/swagger/index.html` in dev mode (chi route)
+- [x] **Annotate all handlers** — Add `@Summary`, `@Tags`, `@Param`, `@Success`, `@Router` comments to each handler
+- [x] **DTO schemas** — Ensure request/response types are documented for Swagger output
 
 ## Phase 2 — Shared Frontend Package
 

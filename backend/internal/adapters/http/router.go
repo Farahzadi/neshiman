@@ -6,6 +6,7 @@ import (
 	"neshiman/backend/internal/application"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/swaggo/http-swagger"
 )
 
 func newRouter(
@@ -21,6 +22,8 @@ func newRouter(
 
 	r.Use(middleware.CORS)
 	r.Use(middleware.RequestID)
+
+	r.Get("/swagger/*", httpSwagger.Handler())
 
 	roomHandler := handlers.NewRoomHandler(roomSvc)
 	reservationHandler := handlers.NewReservationHandler(reservationSvc)

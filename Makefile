@@ -55,6 +55,9 @@ db-migrate:
 	$(call check_tool,migrate)
 	migrate -path backend/db/migrations -database "$(DB_URL)" up
 
+swagger-gen:
+	cd backend && swag init -g ./cmd/server/main.go --output ./docs
+
 db-migrate-down:
 	$(call check_tool,migrate)
 	migrate -path backend/db/migrations -database "$(DB_URL)" down $(filter-out $@,$(MAKECMDGOALS))

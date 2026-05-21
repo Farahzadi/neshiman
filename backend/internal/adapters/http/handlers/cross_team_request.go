@@ -21,6 +21,15 @@ func NewCrossTeamRequestHandler(svc *application.CrossTeamRequestService) *Cross
 	return &CrossTeamRequestHandler{svc: svc}
 }
 
+// CreateCrossTeamRequest creates a cross-team seat request
+// @Summary      Create a cross-team request
+// @Tags         CrossTeamRequests
+// @Accept       json
+// @Produce      json
+// @Param        request body dto.CreateCrossTeamRequestRequest true "Request details"
+// @Success      201  {object}  dto.CrossTeamRequestResponse
+// @Failure      400  {string}  string
+// @Router       /cross-team-requests [post]
 func (h *CrossTeamRequestHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateCrossTeamRequestRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -46,6 +55,14 @@ func (h *CrossTeamRequestHandler) Create(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusCreated, dto.CrossTeamRequestToResponse(request))
 }
 
+// GetCrossTeamRequestByID returns a cross-team request by ID
+// @Summary      Get a cross-team request by ID
+// @Tags         CrossTeamRequests
+// @Produce      json
+// @Param        id   path      string  true  "Request ID"
+// @Success      200  {object}  dto.CrossTeamRequestResponse
+// @Failure      404  {string}  string
+// @Router       /cross-team-requests/{id} [get]
 func (h *CrossTeamRequestHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -60,6 +77,14 @@ func (h *CrossTeamRequestHandler) GetByID(w http.ResponseWriter, r *http.Request
 	writeJSON(w, http.StatusOK, dto.CrossTeamRequestToResponse(request))
 }
 
+// ListCrossTeamRequestsByStatus lists requests by status
+// @Summary      List requests by status
+// @Tags         CrossTeamRequests
+// @Produce      json
+// @Param        status  query     string  true  "Status (pending/approved/rejected)"
+// @Success      200     {array}   dto.CrossTeamRequestResponse
+// @Failure      400     {string}  string
+// @Router       /cross-team-requests [get]
 func (h *CrossTeamRequestHandler) ListByStatus(w http.ResponseWriter, r *http.Request) {
 	status := r.URL.Query().Get("status")
 	if status == "" {
@@ -78,6 +103,14 @@ func (h *CrossTeamRequestHandler) ListByStatus(w http.ResponseWriter, r *http.Re
 	writeJSON(w, http.StatusOK, responses)
 }
 
+// ListPendingCrossTeamRequestsByTeam lists pending requests for a team
+// @Summary      List pending requests by team
+// @Tags         CrossTeamRequests
+// @Produce      json
+// @Param        team_id  query     string  true  "Team ID"
+// @Success      200      {array}   dto.CrossTeamRequestResponse
+// @Failure      400      {string}  string
+// @Router       /cross-team-requests/pending-by-team [get]
 func (h *CrossTeamRequestHandler) ListPendingByTeam(w http.ResponseWriter, r *http.Request) {
 	teamID, err := uuid.Parse(r.URL.Query().Get("team_id"))
 	if err != nil {
@@ -96,6 +129,14 @@ func (h *CrossTeamRequestHandler) ListPendingByTeam(w http.ResponseWriter, r *ht
 	writeJSON(w, http.StatusOK, responses)
 }
 
+// ApproveCrossTeamRequest approves a pending request
+// @Summary      Approve a cross-team request
+// @Tags         CrossTeamRequests
+// @Produce      json
+// @Param        id   path      string  true  "Request ID"
+// @Success      200  {object}  dto.CrossTeamRequestResponse
+// @Failure      400  {string}  string
+// @Router       /cross-team-requests/{id}/approve [put]
 func (h *CrossTeamRequestHandler) Approve(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -110,6 +151,14 @@ func (h *CrossTeamRequestHandler) Approve(w http.ResponseWriter, r *http.Request
 	writeJSON(w, http.StatusOK, dto.CrossTeamRequestToResponse(request))
 }
 
+// RejectCrossTeamRequest rejects a pending request
+// @Summary      Reject a cross-team request
+// @Tags         CrossTeamRequests
+// @Produce      json
+// @Param        id   path      string  true  "Request ID"
+// @Success      200  {object}  dto.CrossTeamRequestResponse
+// @Failure      400  {string}  string
+// @Router       /cross-team-requests/{id}/reject [put]
 func (h *CrossTeamRequestHandler) Reject(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {

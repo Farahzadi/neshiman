@@ -5,11 +5,18 @@ import (
 	"fmt"
 	"log"
 
+	_ "neshiman/backend/docs"
 	"neshiman/backend/internal/adapters/config"
 	httpadapter "neshiman/backend/internal/adapters/http"
 	"neshiman/backend/internal/adapters/postgres"
 	"neshiman/backend/internal/application"
 )
+
+// @title           Neshiman API
+// @version         1.0
+// @description     Seat plan management system
+// @host            localhost:8080
+// @BasePath        /api/v1
 
 func main() {
 	cfg := config.Load()

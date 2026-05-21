@@ -20,6 +20,15 @@ func NewUserHandler(userSvc *application.UserService) *UserHandler {
 	return &UserHandler{userSvc: userSvc}
 }
 
+// CreateUser creates a new user
+// @Summary      Create a user
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        request body dto.CreateUserRequest true "User details"
+// @Success      201  {object}  dto.UserResponse
+// @Failure      400  {string}  string
+// @Router       /users [post]
 func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -43,6 +52,14 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, dto.UserToResponse(user))
 }
 
+// GetUserByID returns a user by ID
+// @Summary      Get a user by ID
+// @Tags         Users
+// @Produce      json
+// @Param        id   path      string  true  "User ID"
+// @Success      200  {object}  dto.UserResponse
+// @Failure      404  {string}  string
+// @Router       /users/{id} [get]
 func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -57,6 +74,14 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, dto.UserToResponse(user))
 }
 
+// GetUserByEmail returns a user by email
+// @Summary      Get a user by email
+// @Tags         Users
+// @Produce      json
+// @Param        email  query     string  true  "User email"
+// @Success      200    {object}  dto.UserResponse
+// @Failure      404    {string}  string
+// @Router       /users/by-email [get]
 func (h *UserHandler) GetByEmail(w http.ResponseWriter, r *http.Request) {
 	email := r.URL.Query().Get("email")
 	if email == "" {
@@ -71,6 +96,14 @@ func (h *UserHandler) GetByEmail(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, dto.UserToResponse(user))
 }
 
+// ListUsersByTeam returns users in a team
+// @Summary      List users by team
+// @Tags         Users
+// @Produce      json
+// @Param        team_id  query     string  true  "Team ID"
+// @Success      200      {array}   dto.UserResponse
+// @Failure      400      {string}  string
+// @Router       /users [get]
 func (h *UserHandler) ListByTeam(w http.ResponseWriter, r *http.Request) {
 	teamID, err := uuid.Parse(r.URL.Query().Get("team_id"))
 	if err != nil {
@@ -89,6 +122,15 @@ func (h *UserHandler) ListByTeam(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, responses)
 }
 
+// UpdateUserWeeklyLimit updates a user's weekly reservation limit
+// @Summary      Update weekly limit
+// @Tags         Users
+// @Accept       json
+// @Param        id       path      string                      true  "User ID"
+// @Param        request  body      dto.UpdateWeeklyLimitRequest  true  "Weekly limit"
+// @Success      204      {string}  string
+// @Failure      400      {string}  string
+// @Router       /users/{id}/weekly-limit [put]
 func (h *UserHandler) UpdateWeeklyLimit(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -107,6 +149,12 @@ func (h *UserHandler) UpdateWeeklyLimit(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// DeleteUser deletes a user
+// @Summary      Delete a user
+// @Tags         Users
+// @Param        id   path      string  true  "User ID"
+// @Success      204  {string}  string
+// @Router       /users/{id} [delete]
 func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {

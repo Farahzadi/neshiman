@@ -37,6 +37,7 @@ Run all from `backend/`:
 | `go test ./...` | Run all tests |
 | `sqlc generate` | Regenerate `backend/db/sqlc/` from `backend/db/query/` |
 | `migrate -path db/migrations -database "$DB_URL" up` | Apply migrations |
+| `swag init -g ./cmd/server/main.go --output ./docs` | Regenerate swagger docs from handler annotations |
 | `go mod tidy` | Sync Go module dependencies |
 
 The entrypoint is `backend/cmd/server/main.go` — wires config → DB pool → repositories → services → HTTP router.
@@ -60,6 +61,7 @@ Run from each frontend app directory:
 - **Migrations**: Written in `backend/db/migrations/` using golang-migrate naming convention (`NNNNNN_name.up.sql` / `.down.sql`).
 - **Domain pure**: `internal/domain/` imports nothing outside stdlib. No DB, no HTTP.
 - **Wiring only in main.go**: `cmd/server/main.go` is the composition root — the only place concrete types cross package boundaries.
+- **Swagger**: Annotate new handlers with `@Summary`, `@Tags`, `@Param`, `@Success`, `@Router` comments. Regenerate with `make swagger-gen` or `swag init` from `backend/`.
 - **Seat geometry**: Rectangular (not triangular). Grid-based room layout.
 - **Memberships**: Non-overlapping. A user belongs to exactly one team.
 - **Reservations**: Per-day, one person per seat. Weekly limit configurable per user by team admin.
@@ -84,10 +86,9 @@ Run from each frontend app directory:
 ### Current state
 - `go build` + `go vet` pass across all packages
 - Postgres running in Docker, 6 migrations applied, `sqlc generate` done
-- Room and Reservation: fully wired end-to-end
-- Seat and User: domain + ports + postgres adapters exist, but no services/handlers/routes
-- Team and CrossTeamRequest: domain + ports + SQL queries exist, no postgres adapters/services/handlers
-- Auth/Role middleware: defined but stubs, not wired to routes
-- Both frontends: SolidJS scaffold with rplaceholders for all feature pages, no API layer
+- Room, Reservation, Team, Seat, User, CrossTeamRequest: all fully wired end-to-end
+- Auth/Role middleware: wired to `/api/v1` routes, stub identity until Phase 6
+- Swagger: `/swagger/index.html` serves browsable API docs (20 paths documented)
+- Both frontends: SolidJS scaffold with placeholders for all feature pages, no API layer
 - Zero tests anywhere
 - Next steps: see `roadmap.md`
