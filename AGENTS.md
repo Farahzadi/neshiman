@@ -17,6 +17,7 @@ make dev      # Start all services (postgres + backend + both frontends)
 - `apps/admin/` — SolidJS app (admin management UI) [@neshiman/admin]
 - `apps/viewer/` — SolidJS app (seat reservation UI) [@neshiman/viewer]
 - `packages/api-types/` — Auto-generated TypeScript types from backend Swagger spec [@neshiman/api-types]
+- `packages/api-client/` — TanStack Query hooks + typed fetch wrapper [@neshiman/api-client]
 - `packages/tsconfig/` — Shared TypeScript base configs [@neshiman/tsconfig]
 - `packages/tailwind-config/` — Shared TailwindCSS preset [@neshiman/tailwind-config]
 - `docker-compose.yml` — production orchestration
@@ -106,5 +107,6 @@ Run from repo root (or via `pnpm --filter <package>`):
 - Swagger: `/swagger/index.html` serves browsable API docs (20 paths documented)
 - Phase 2 complete: Turborepo + pnpm workspaces. Frontend apps moved to `apps/`, shared packages in `packages/`. TypeScript types auto-generated from backend DTOs via openapi-typescript. Shared tsconfig + tailwind preset.
 - **Phase 3 complete**: Seed script (`make seed`), test DB setup in `make test`, 136 passing tests (28 domain + 59 service + 49 integration)
-- Both frontends: SolidJS scaffold with placeholders for all feature pages, no API layer yet
+- **Phase 3.5 complete**: `packages/api-client/` with TanStack Query hooks for all 20 endpoints, typed fetch wrapper with `setAuthHeader()`, query key factory, `QueryClientProvider` + `SolidQueryDevtools` wired into both apps
+- Both frontends: SolidJS scaffold with placeholders, but now have full API client layer ready
 - Next steps: see `roadmap.md`

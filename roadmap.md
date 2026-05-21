@@ -46,6 +46,23 @@ Extract common code into a shared package used by both frontends, using Turborep
 - [x] **Backend unit tests** — 28 domain tests, 59 application service tests (87 total)
 - [x] **Backend integration tests** — 49 repository tests against real Postgres (136 total across all packages)
 
+## Phase 3.5 — API Client Library
+
+Build a shared TanStack Query-based API client package used by both frontends.
+
+- [x] **Create `packages/api-client/`** — Workspace package with typed fetch wrapper
+- [x] **`client.ts`** — Fetch wrapper with `setAuthHeader()` config, error extraction, base URL
+- [x] **`query-keys.ts`** — Query key factory for all entities
+- [x] **Hook files** — 6 entity files covering all 20 API endpoints
+  - Rooms (5 hooks: list, detail, create, update, delete)
+  - Seats (6 hooks: list-by-room, detail, create, delete, move, rotate)
+  - Teams (4 hooks: list, detail, create, delete)
+  - Users (6 hooks: list-by-team, detail, by-email, create, delete, weekly-limit)
+  - Reservations (3 hooks: by-date, by-user-date, create)
+  - Cross-team requests (6 hooks: by-status, pending-by-team, detail, create, approve, reject)
+- [x] **Providers** — `QueryClientProvider` + `SolidQueryDevtools` added to both apps
+- [x] **Both apps updated** — `App.tsx` wraps router in Providers, lazy-loads devtools in dev
+
 ## Phase 4 — Frontend Admin
 
 Build the admin management UI.

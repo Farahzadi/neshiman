@@ -14,12 +14,18 @@ importers:
 
   apps/admin:
     dependencies:
+      '@neshiman/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
       '@neshiman/api-types':
         specifier: workspace:*
         version: link:../../packages/api-types
       '@solidjs/router':
         specifier: ^0.14.0
         version: 0.14.10(solid-js@1.9.13)
+      '@tanstack/solid-query':
+        specifier: ^5.100.0
+        version: 5.100.11(solid-js@1.9.13)
       solid-js:
         specifier: ^1.9.0
         version: 1.9.13
@@ -30,6 +36,9 @@ importers:
       '@neshiman/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
+      '@tanstack/solid-query-devtools':
+        specifier: ^5.100.0
+        version: 5.100.11(@tanstack/solid-query@5.100.11(solid-js@1.9.13))(solid-js@1.9.13)
       '@typescript-eslint/eslint-plugin':
         specifier: ^7.0.0
         version: 7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1)(typescript@5.9.3)
@@ -72,12 +81,18 @@ importers:
 
   apps/viewer:
     dependencies:
+      '@neshiman/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
       '@neshiman/api-types':
         specifier: workspace:*
         version: link:../../packages/api-types
       '@solidjs/router':
         specifier: ^0.14.0
         version: 0.14.10(solid-js@1.9.13)
+      '@tanstack/solid-query':
+        specifier: ^5.100.0
+        version: 5.100.11(solid-js@1.9.13)
       solid-js:
         specifier: ^1.9.0
         version: 1.9.13
@@ -88,6 +103,9 @@ importers:
       '@neshiman/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
+      '@tanstack/solid-query-devtools':
+        specifier: ^5.100.0
+        version: 5.100.11(@tanstack/solid-query@5.100.11(solid-js@1.9.13))(solid-js@1.9.13)
       '@typescript-eslint/eslint-plugin':
         specifier: ^7.0.0
         version: 7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1)(typescript@5.9.3)
@@ -127,6 +145,18 @@ importers:
       vitest:
         specifier: ^1.6.0
         version: 1.6.1
+
+  packages/api-client:
+    dependencies:
+      '@neshiman/api-types':
+        specifier: workspace:*
+        version: link:../api-types
+      '@tanstack/solid-query':
+        specifier: ^5.100.11
+        version: 5.100.11(solid-js@1.9.13)
+      solid-js:
+        specifier: ^1.6.0
+        version: 1.9.13
 
   packages/api-types:
     devDependencies:
@@ -562,6 +592,23 @@ packages:
     resolution: {integrity: sha512-5B8LVgvvXijfXyXWPVLUm7RQ05BhjIpAyRkYVDZtrR3OaSvftXobWc6qSEwk4ICLoGi/IE9CUp2LUdCBIs9AXg==}
     peerDependencies:
       solid-js: ^1.8.6
+
+  '@tanstack/query-core@5.100.11':
+    resolution: {integrity: sha512-lmE0994apShXPj8CUxgx4ch5yUJhE9k/+tVwihBvPOyerACWdBocfFg24t8+0RhtlTd7tEgchDkhlCxNssvDxw==}
+
+  '@tanstack/query-devtools@5.100.11':
+    resolution: {integrity: sha512-47rVBDuGMW/A4ekt3YQdz+q0JSIwktwGnWCYyQUvSs2/g/Oa+6Fi2/IQk4/Y4vf6u1uwI7hOogHslgMC8f3X/Q==}
+
+  '@tanstack/solid-query-devtools@5.100.11':
+    resolution: {integrity: sha512-Ynpc7jsLu2tIswDyAdNnhVAK8fCMaBhXTpGgbESVT/n0OhJ6KFu86pqZ+q6/JNdQrv7N/14t4sCMfwq9LigJCA==}
+    peerDependencies:
+      '@tanstack/solid-query': ^5.100.11
+      solid-js: ^1.6.0
+
+  '@tanstack/solid-query@5.100.11':
+    resolution: {integrity: sha512-T6elzjzSwzc0hr5Se+WlQHjBilxHA5q6w1XWYz72XhlUR66fQtcQdH/rtoJR/SOmRuwyHowR7IvsO/6JhraBxg==}
+    peerDependencies:
+      solid-js: ^1.6.0
 
   '@turbo/darwin-64@2.9.14':
     resolution: {integrity: sha512-t7QiPflaEyBE4oayeZtSmu4mEfjgIrcNlNNl1z1dmIVPqEdtA7+CfTf8d7KXsOGPh6aNgWjKxyvQg9uGfDQF+A==}
@@ -2152,6 +2199,21 @@ snapshots:
 
   '@solidjs/router@0.14.10(solid-js@1.9.13)':
     dependencies:
+      solid-js: 1.9.13
+
+  '@tanstack/query-core@5.100.11': {}
+
+  '@tanstack/query-devtools@5.100.11': {}
+
+  '@tanstack/solid-query-devtools@5.100.11(@tanstack/solid-query@5.100.11(solid-js@1.9.13))(solid-js@1.9.13)':
+    dependencies:
+      '@tanstack/query-devtools': 5.100.11
+      '@tanstack/solid-query': 5.100.11(solid-js@1.9.13)
+      solid-js: 1.9.13
+
+  '@tanstack/solid-query@5.100.11(solid-js@1.9.13)':
+    dependencies:
+      '@tanstack/query-core': 5.100.11
       solid-js: 1.9.13
 
   '@turbo/darwin-64@2.9.14':
