@@ -1,0 +1,121 @@
+package handlers
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"neshiman/backend/internal/adapters/http/dto"
+	"neshiman/backend/internal/application"
+	"neshiman/backend/internal/domain"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+)
+
+type UserHandler struct {
+	userSvc *application.UserService
+}
+
+func NewUserHandler(userSvc *application.UserService) *UserHandler {
+	return &UserHandler{userSvc: userSvc}
+}
+
+func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
+	var req dto.CreateUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	var teamID *uuid.UUID
+	if req.TeamID != nil {
+		id, err := uuid.Parse(*req.TeamID)
+		if err != nil {
+			http.Error(w, "invalid team_id", http.StatusBadRequest)
+			return
+		}
+		teamID = &id
+	}
+	user, err := h.userSvc.CreateUser(r.Context(), req.Name, req.Email, teamID, domain.Role(req.Role), domain.WeeklyLimit(req.WeeklyLimit))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, http.StatusCreated, dto.UserToResponse(user))
+}
+
+func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid user id", http.StatusBadRequest)
+		return
+	}
+	user, err := h.userSvc.GetUser(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	writeJSON(w, http.StatusOK, dto.UserToResponse(user))
+}
+
+func (h *UserHandler) GetByEmail(w http.ResponseWriter, r *http.Request) {
+	email := r.URL.Query().Get("email")
+	if email == "" {
+		http.Error(w, "email query parameter required", http.StatusBadRequest)
+		return
+	}
+	user, err := h.userSvc.GetUserByEmail(r.Context(), email)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	writeJSON(w, http.StatusOK, dto.UserToResponse(user))
+}
+
+func (h *UserHandler) ListByTeam(w http.ResponseWriter, r *http.Request) {
+	teamID, err := uuid.Parse(r.URL.Query().Get("team_id"))
+	if err != nil {
+		http.Error(w, "invalid or missing team_id query parameter", http.StatusBadRequest)
+		return
+	}
+	users, err := h.userSvc.ListUsersByTeam(r.Context(), teamID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	responses := make([]dto.UserResponse, len(users))
+	for i, u := range users {
+		responses[i] = dto.UserToResponse(&u)
+	}
+	writeJSON(w, http.StatusOK, responses)
+}
+
+func (h *UserHandler) UpdateWeeklyLimit(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid user id", http.StatusBadRequest)
+		return
+	}
+	var req dto.UpdateWeeklyLimitRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if err := h.userSvc.UpdateWeeklyLimit(r.Context(), id, domain.WeeklyLimit(req.WeeklyLimit)); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid user id", http.StatusBadRequest)
+		return
+	}
+	if err := h.userSvc.DeleteUser(r.Context(), id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

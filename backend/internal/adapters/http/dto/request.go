@@ -29,3 +29,29 @@ type CreateSeatRequest struct {
 	PosY     int    `json:"pos_y"`
 	Rotation int    `json:"rotation"`
 }
+
+type MoveSeatRequest struct {
+	PosX int `json:"pos_x"`
+	PosY int `json:"pos_y"`
+}
+
+type CreateUserRequest struct {
+	Name        string  `json:"name"`
+	Email       string  `json:"email"`
+	TeamID      *string `json:"team_id"`
+	Role        string  `json:"role"`
+	WeeklyLimit int     `json:"weekly_limit"`
+}
+
+type UpdateWeeklyLimitRequest struct {
+	WeeklyLimit int `json:"weekly_limit"`
+}
+
+type CreateCrossTeamRequestRequest struct {
+	TargetSeatID string `json:"target_seat_id"`
+	Date         string `json:"date"` // YYYY-MM-DD
+}
+
+type RotateSeatRequest struct {
+	Rotation int `json:"rotation"`
+}

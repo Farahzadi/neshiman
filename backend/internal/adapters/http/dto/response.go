@@ -44,12 +44,72 @@ func TeamToResponse(team *domain.Team) TeamResponse {
 	}
 }
 
+type SeatResponse struct {
+	ID       uuid.UUID `json:"id"`
+	RoomID   uuid.UUID `json:"room_id"`
+	TeamID   uuid.UUID `json:"team_id"`
+	Label    string    `json:"label"`
+	PosX     int       `json:"pos_x"`
+	PosY     int       `json:"pos_y"`
+	Rotation int       `json:"rotation"`
+}
+
+func SeatToResponse(seat *domain.Seat) SeatResponse {
+	return SeatResponse{
+		ID:       seat.ID,
+		RoomID:   seat.RoomID,
+		TeamID:   seat.TeamID,
+		Label:    seat.Label,
+		PosX:     seat.Position.X,
+		PosY:     seat.Position.Y,
+		Rotation: int(seat.Rotation),
+	}
+}
+
 func ReservationToResponse(r *domain.Reservation) ReservationResponse {
 	return ReservationResponse{
 		ID:     r.ID,
 		UserID: r.UserID,
 		SeatID: r.SeatID,
 		Date:   formatDate(r.Date),
+	}
+}
+
+type UserResponse struct {
+	ID          uuid.UUID  `json:"id"`
+	Name        string     `json:"name"`
+	Email       string     `json:"email"`
+	TeamID      *uuid.UUID `json:"team_id"`
+	Role        string     `json:"role"`
+	WeeklyLimit int        `json:"weekly_limit"`
+}
+
+func UserToResponse(user *domain.User) UserResponse {
+	return UserResponse{
+		ID:          user.ID,
+		Name:        user.Name,
+		Email:       user.Email,
+		TeamID:      user.TeamID,
+		Role:        string(user.Role),
+		WeeklyLimit: int(user.WeeklyLimit),
+	}
+}
+
+type CrossTeamRequestResponse struct {
+	ID               uuid.UUID `json:"id"`
+	RequestingUserID uuid.UUID `json:"requesting_user_id"`
+	TargetSeatID     uuid.UUID `json:"target_seat_id"`
+	Date             string    `json:"date"`
+	Status           string    `json:"status"`
+}
+
+func CrossTeamRequestToResponse(r *domain.CrossTeamRequest) CrossTeamRequestResponse {
+	return CrossTeamRequestResponse{
+		ID:               r.ID,
+		RequestingUserID: r.RequestingUserID,
+		TargetSeatID:     r.TargetSeatID,
+		Date:             formatDate(r.Date),
+		Status:           string(r.Status),
 	}
 }
 

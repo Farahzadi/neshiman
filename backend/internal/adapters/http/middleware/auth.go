@@ -17,13 +17,15 @@ func AuthMiddleware(jwtSecret string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
-			if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-				http.Error(w, "unauthorized", http.StatusUnauthorized)
-				return
+			var userID uuid.UUID
+			var userRole string
+			if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+				// stub: parse JWT and extract user info
+				// Phase 6 will implement real JWT validation here
 			}
-			// stub: parse JWT and extract user info
-			ctx := context.WithValue(r.Context(), UserIDKey, uuid.Nil)
-			ctx = context.WithValue(ctx, UserRoleKey, "")
+			// stub: default user (uuid.Nil) until real auth is implemented
+			ctx := context.WithValue(r.Context(), UserIDKey, userID)
+			ctx = context.WithValue(ctx, UserRoleKey, userRole)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

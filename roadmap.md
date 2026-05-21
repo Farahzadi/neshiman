@@ -9,14 +9,14 @@ Finish wiring all core entities end-to-end (domain → port → postgres → ser
 - [x] **Team postgres adapter** — Implement `TeamRepository` in `internal/adapters/postgres/team_repository.go`
 - [x] **Team service** — `internal/application/team_service.go` (CRUD)
 - [x] **Team handler + routes** — `internal/adapters/http/handlers/team.go` + routes in `router.go`
-- [ ] **Seat service** — `internal/application/seat_service.go` (CRUD, list-by-room, move, rotate)
-- [ ] **Seat handler + routes** — `internal/adapters/http/handlers/seat.go` + routes in `router.go`
-- [ ] **User service** — `internal/application/user_service.go` (CRUD, weekly limit updates)
-- [ ] **User handler + routes** — `internal/adapters/http/handlers/user.go` + routes in `router.go`
-- [ ] **CrossTeamRequest postgres adapter** — `internal/adapters/postgres/cross_team_request_repository.go`
-- [ ] **CrossTeamRequest service** — `internal/application/cross_team_request_service.go` (submit, list, approve, reject)
-- [ ] **CrossTeamRequest handler + routes** — `internal/adapters/http/handlers/cross_team_request.go` + routes in `router.go`
-- [ ] **Wire Auth + Role middleware** — Apply to routes; keep stub identity for now (real auth deferred)
+- [x] **Seat service** — `internal/application/seat_service.go` (CRUD, list-by-room, move, rotate)
+- [x] **Seat handler + routes** — `internal/adapters/http/handlers/seat.go` + routes in `router.go`
+- [x] **User service** — `internal/application/user_service.go` (CRUD, weekly limit updates)
+- [x] **User handler + routes** — `internal/adapters/http/handlers/user.go` + routes in `router.go`
+- [x] **CrossTeamRequest postgres adapter** — `internal/adapters/postgres/cross_team_request_repository.go`
+- [x] **CrossTeamRequest service** — `internal/application/cross_team_request_service.go` (submit, list, approve, reject)
+- [x] **CrossTeamRequest handler + routes** — `internal/adapters/http/handlers/cross_team_request.go` + routes in `router.go`
+- [x] **Wire Auth + Role middleware** — Apply to routes; keep stub identity for now (real auth deferred)
 
 ## Phase 1.5 — Swagger / OpenAPI
 
