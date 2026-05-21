@@ -12,6 +12,9 @@ SELECT * FROM users WHERE email = $1;
 -- name: ListUsersByTeam :many
 SELECT * FROM users WHERE team_id = $1 ORDER BY name;
 
+-- name: ListUsers :many
+SELECT * FROM users ORDER BY name;
+
 -- name: UpdateUserWeeklyLimit :one
 UPDATE users SET weekly_limit = $2, updated_at = now()
 WHERE id = $1

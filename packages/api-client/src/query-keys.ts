@@ -14,15 +14,18 @@ export const queryKeys = {
   },
   users: {
     all: ['users'] as const,
+    byTeam: (teamId: string) => ['users', 'team', teamId] as const,
     detail: (id: string) => ['users', id] as const,
     byEmail: (email: string) => ['users', 'email', email] as const,
   },
   reservations: {
+    all: ['reservations'] as const,
     byDate: (date: string) => ['reservations', date] as const,
     byUserDate: (userId: string, date: string) => ['reservations', userId, date] as const,
   },
   crossTeamRequests: {
     all: ['cross-team-requests'] as const,
+    byStatus: (status: string) => ['cross-team-requests', 'status', status] as const,
     pendingByTeam: (teamId: string) => ['cross-team-requests', 'pending', teamId] as const,
     detail: (id: string) => ['cross-team-requests', id] as const,
   },

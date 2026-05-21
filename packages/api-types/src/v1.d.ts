@@ -480,8 +480,8 @@ export interface paths {
     get: {
       parameters: {
         query: {
-          /** Team ID */
-          team_id: string;
+          /** Team ID (omit for all users) */
+          team_id?: string;
         };
       };
       responses: {

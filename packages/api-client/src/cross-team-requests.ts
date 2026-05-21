@@ -8,7 +8,7 @@ type CreateCrossTeamRequest = definitions['dto.CreateCrossTeamRequestRequest'];
 
 export function useCrossTeamRequests(status: () => string) {
   return useQuery(() => ({
-    queryKey: queryKeys.crossTeamRequests.all,
+    queryKey: queryKeys.crossTeamRequests.byStatus(status()),
     queryFn: () => apiFetch<CrossTeamRequest[]>(`/v1/cross-team-requests?status=${status()}`),
     enabled: !!status(),
   }));

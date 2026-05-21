@@ -108,5 +108,6 @@ Run from repo root (or via `pnpm --filter <package>`):
 - Phase 2 complete: Turborepo + pnpm workspaces. Frontend apps moved to `apps/`, shared packages in `packages/`. TypeScript types auto-generated from backend DTOs via openapi-typescript. Shared tsconfig + tailwind preset.
 - **Phase 3 complete**: Seed script (`make seed`), test DB setup in `make test`, 136 passing tests (28 domain + 59 service + 49 integration)
 - **Phase 3.5 complete**: `packages/api-client/` with TanStack Query hooks for all 20 endpoints, typed fetch wrapper with `setAuthHeader()`, query key factory, `QueryClientProvider` + `SolidQueryDevtools` wired into both apps
-- Both frontends: SolidJS scaffold with placeholders, but now have full API client layer ready
+- **Phase 4 complete**: Full admin UI with sidebar layout, Rooms CRUD, Seats grid editor (color-coded by team, rotate, delete), Teams with inline user management, Users page with team filter and weekly limit editing, Cross-Team Requests approval queue
+- Viewer app: SolidJS scaffold with placeholders, ready for Phase 5
 - Next steps: see `roadmap.md`

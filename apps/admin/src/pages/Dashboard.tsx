@@ -1,19 +1,27 @@
-import { Component } from 'solid-js';
-import { A } from '@solidjs/router';
+import { Component, For } from 'solid-js';
+import { useRooms, useTeams } from '@neshiman/api-client';
 
 const Dashboard: Component = () => {
+  const rooms = useRooms();
+  const teams = useTeams();
+
+  const stats = () => [
+    { label: 'Rooms', value: rooms.data?.length ?? '-', color: 'bg-blue-500' },
+    { label: 'Teams', value: teams.data?.length ?? '-', color: 'bg-green-500' },
+  ];
+
   return (
-    <div class="p-6">
-      <h1 class="text-2xl font-bold mb-6">Admin Dashboard</h1>
+    <div>
+      <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <A href="/rooms" class="p-4 border rounded-lg hover:shadow-md">
-          <h2 class="font-semibold">Rooms</h2>
-          <p class="text-sm text-gray-600">Manage rooms and grid sizes</p>
-        </A>
-        <A href="/teams" class="p-4 border rounded-lg hover:shadow-md">
-          <h2 class="font-semibold">Teams</h2>
-          <p class="text-sm text-gray-600">Manage teams and members</p>
-        </A>
+        <For each={stats()}>
+          {(stat) => (
+            <div class="bg-white rounded-lg shadow p-5 border-l-4" style={{ 'border-left-color': stat.color.replace('bg-', '') === 'blue-500' ? '#3b82f6' : '#22c55e' }}>
+              <p class="text-sm text-gray-500">{stat.label}</p>
+              <p class="text-3xl font-bold mt-1">{stat.value}</p>
+            </div>
+          )}
+        </For>
       </div>
     </div>
   );

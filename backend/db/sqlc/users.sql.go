@@ -97,6 +97,39 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 	return i, err
 }
 
+const listUsers = `-- name: ListUsers :many
+SELECT id, name, email, team_id, role, weekly_limit, created_at, updated_at FROM users ORDER BY name
+`
+
+func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
+	rows, err := q.db.Query(ctx, listUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Email,
+			&i.TeamID,
+			&i.Role,
+			&i.WeeklyLimit,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUsersByTeam = `-- name: ListUsersByTeam :many
 SELECT id, name, email, team_id, role, weekly_limit, created_at, updated_at FROM users WHERE team_id = $1 ORDER BY name
 `

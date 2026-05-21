@@ -100,14 +100,28 @@ func (h *UserHandler) GetByEmail(w http.ResponseWriter, r *http.Request) {
 // @Summary      List users by team
 // @Tags         Users
 // @Produce      json
-// @Param        team_id  query     string  true  "Team ID"
+// @Param        team_id  query     string  false  "Team ID (omit for all users)"
 // @Success      200      {array}   dto.UserResponse
 // @Failure      400      {string}  string
 // @Router       /users [get]
 func (h *UserHandler) ListByTeam(w http.ResponseWriter, r *http.Request) {
-	teamID, err := uuid.Parse(r.URL.Query().Get("team_id"))
+	teamIDStr := r.URL.Query().Get("team_id")
+	if teamIDStr == "" {
+		users, err := h.userSvc.ListAllUsers(r.Context())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		responses := make([]dto.UserResponse, len(users))
+		for i, u := range users {
+			responses[i] = dto.UserToResponse(&u)
+		}
+		writeJSON(w, http.StatusOK, responses)
+		return
+	}
+	teamID, err := uuid.Parse(teamIDStr)
 	if err != nil {
-		http.Error(w, "invalid or missing team_id query parameter", http.StatusBadRequest)
+		http.Error(w, "invalid team_id query parameter", http.StatusBadRequest)
 		return
 	}
 	users, err := h.userSvc.ListUsersByTeam(r.Context(), teamID)

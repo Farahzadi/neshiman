@@ -38,18 +38,20 @@ func (m *mockSeatRepo) Update(ctx context.Context, seat *domain.Seat) error { re
 func (m *mockSeatRepo) Delete(ctx context.Context, id uuid.UUID) error { return m.deleteFn(ctx, id) }
 
 type mockUserRepo struct {
-	createFn          func(ctx context.Context, user *domain.User) error
-	getByIDFn         func(ctx context.Context, id uuid.UUID) (*domain.User, error)
-	getByEmailFn      func(ctx context.Context, email string) (*domain.User, error)
-	listByTeamFn      func(ctx context.Context, teamID uuid.UUID) ([]domain.User, error)
+	createFn            func(ctx context.Context, user *domain.User) error
+	getByIDFn           func(ctx context.Context, id uuid.UUID) (*domain.User, error)
+	getByEmailFn        func(ctx context.Context, email string) (*domain.User, error)
+	listByTeamFn        func(ctx context.Context, teamID uuid.UUID) ([]domain.User, error)
+	listAllFn           func(ctx context.Context) ([]domain.User, error)
 	updateWeeklyLimitFn func(ctx context.Context, id uuid.UUID, limit domain.WeeklyLimit) error
-	deleteFn          func(ctx context.Context, id uuid.UUID) error
+	deleteFn            func(ctx context.Context, id uuid.UUID) error
 }
 
 func (m *mockUserRepo) Create(ctx context.Context, user *domain.User) error { return m.createFn(ctx, user) }
 func (m *mockUserRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error) { return m.getByIDFn(ctx, id) }
 func (m *mockUserRepo) GetByEmail(ctx context.Context, email string) (*domain.User, error) { return m.getByEmailFn(ctx, email) }
 func (m *mockUserRepo) ListByTeam(ctx context.Context, teamID uuid.UUID) ([]domain.User, error) { return m.listByTeamFn(ctx, teamID) }
+func (m *mockUserRepo) ListAll(ctx context.Context) ([]domain.User, error) { return m.listAllFn(ctx) }
 func (m *mockUserRepo) UpdateWeeklyLimit(ctx context.Context, id uuid.UUID, limit domain.WeeklyLimit) error { return m.updateWeeklyLimitFn(ctx, id, limit) }
 func (m *mockUserRepo) Delete(ctx context.Context, id uuid.UUID) error { return m.deleteFn(ctx, id) }
 

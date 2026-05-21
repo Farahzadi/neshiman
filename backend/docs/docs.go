@@ -887,10 +887,9 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Team ID",
+                        "description": "Team ID (omit for all users)",
                         "name": "team_id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {

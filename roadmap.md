@@ -67,12 +67,13 @@ Build a shared TanStack Query-based API client package used by both frontends.
 
 Build the admin management UI.
 
-- [ ] **Rooms page** — CRUD table, create/edit form, grid dimensions
-- [ ] **Seats page** — Visual grid editor for room layout, drag to place seats, assign teams
-- [ ] **Teams page** — CRUD list, member management
-- [ ] **Users page** — List by team, edit weekly limits
-- [ ] **Cross-team requests** — Approval queue with approve/reject actions
-- [ ] **Dashboard** — Summary stats (rooms, seats, active reservations)
+- [x] **Dashboard** — Summary stats (room count, team count)
+- [x] **Rooms page** — CRUD table, create/edit modal form, grid dimensions, delete confirmation
+- [x] **Seats page** — Visual grid editor showing room grid with positioned seats, click to add/select seats, color-coded by team, rotate +90°, delete
+- [x] **Teams page** — CRUD list with expandable inline user management (create/delete users, edit weekly limits)
+- [x] **Users page** — Team filter dropdown, user CRUD table, inline weekly limit editing
+- [x] **Cross-team requests** — Status tab filter (pending/approved/rejected), table with approve/reject actions
+- [x] **Layout** — Sidebar navigation with active state highlighting
 
 ## Phase 5 — Frontend Viewer
 

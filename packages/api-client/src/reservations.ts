@@ -27,6 +27,6 @@ export function useCreateReservation() {
   return useMutation(() => ({
     mutationFn: (data: CreateReservation) =>
       apiFetch<Reservation>('/v1/reservations', { method: 'POST', body: JSON.stringify(data) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.reservations.byDate }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.reservations.all }),
   }));
 }

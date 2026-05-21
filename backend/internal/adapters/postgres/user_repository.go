@@ -109,6 +109,28 @@ func (r *UserRepository) ListByTeam(ctx context.Context, teamID uuid.UUID) ([]do
 	return users, nil
 }
 
+func (r *UserRepository) ListAll(ctx context.Context) ([]domain.User, error) {
+	results, err := r.q.ListUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	users := make([]domain.User, len(results))
+	for i, row := range results {
+		users[i] = domain.User{
+			ID:          row.ID,
+			Name:        row.Name,
+			Email:       row.Email,
+			Role:        domain.Role(row.Role),
+			WeeklyLimit: domain.WeeklyLimit(row.WeeklyLimit),
+		}
+		if row.TeamID.Valid {
+			t := uuid.UUID(row.TeamID.Bytes)
+			users[i].TeamID = &t
+		}
+	}
+	return users, nil
+}
+
 func (r *UserRepository) UpdateWeeklyLimit(ctx context.Context, userID uuid.UUID, limit domain.WeeklyLimit) error {
 	_, err := r.q.UpdateUserWeeklyLimit(ctx, sqlc.UpdateUserWeeklyLimitParams{
 		ID:          userID,

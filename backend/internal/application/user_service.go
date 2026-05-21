@@ -36,6 +36,10 @@ func (s *UserService) ListUsersByTeam(ctx context.Context, teamID uuid.UUID) ([]
 	return s.users.ListByTeam(ctx, teamID)
 }
 
+func (s *UserService) ListAllUsers(ctx context.Context) ([]domain.User, error) {
+	return s.users.ListAll(ctx)
+}
+
 func (s *UserService) UpdateWeeklyLimit(ctx context.Context, userID uuid.UUID, limit domain.WeeklyLimit) error {
 	return s.users.UpdateWeeklyLimit(ctx, userID, limit)
 }

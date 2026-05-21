@@ -9,9 +9,11 @@ type UpdateWeeklyLimit = definitions['dto.UpdateWeeklyLimitRequest'];
 
 export function useUsers(teamId: () => string) {
   return useQuery(() => ({
-    queryKey: queryKeys.users.all,
-    queryFn: () => apiFetch<User[]>(`/v1/users?team_id=${teamId()}`),
-    enabled: !!teamId(),
+    queryKey: teamId() ? queryKeys.users.byTeam(teamId()) : queryKeys.users.all,
+    queryFn: () => {
+      const query = teamId() ? `?team_id=${teamId()}` : '';
+      return apiFetch<User[]>(`/v1/users${query}`);
+    },
   }));
 }
 
@@ -56,6 +58,7 @@ export function useUpdateWeeklyLimit() {
       apiFetch<void>(`/v1/users/${id}/weekly-limit`, { method: 'PUT', body: JSON.stringify(data) }),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: queryKeys.users.detail(vars.id) });
+      qc.invalidateQueries({ queryKey: queryKeys.users.all });
     },
   }));
 }
