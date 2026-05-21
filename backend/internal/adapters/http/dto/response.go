@@ -32,6 +32,18 @@ func RoomToResponse(room *domain.Room) RoomResponse {
 	}
 }
 
+type TeamResponse struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+func TeamToResponse(team *domain.Team) TeamResponse {
+	return TeamResponse{
+		ID:   team.ID,
+		Name: team.Name,
+	}
+}
+
 func ReservationToResponse(r *domain.Reservation) ReservationResponse {
 	return ReservationResponse{
 		ID:     r.ID,

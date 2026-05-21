@@ -17,6 +17,10 @@ type CreateReservationRequest struct {
 	Date   string `json:"date"` // YYYY-MM-DD
 }
 
+type CreateTeamRequest struct {
+	Name string `json:"name"`
+}
+
 type CreateSeatRequest struct {
 	RoomID   string `json:"room_id"`
 	TeamID   string `json:"team_id"`

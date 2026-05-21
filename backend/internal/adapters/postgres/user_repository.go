@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -24,9 +25,9 @@ func NewUserRepository(pool *pgxpool.Pool) ports.UserRepository {
 }
 
 func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
-	teamID := uuid.Nil
+	teamID := pgtype.UUID{Valid: false}
 	if user.TeamID != nil {
-		teamID = *user.TeamID
+		teamID = pgtype.UUID{Bytes: *user.TeamID, Valid: true}
 	}
 	result, err := r.q.CreateUser(ctx, sqlc.CreateUserParams{
 		Name:        user.Name,
@@ -57,8 +58,9 @@ func (r *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Use
 		Role:        domain.Role(result.Role),
 		WeeklyLimit: domain.WeeklyLimit(result.WeeklyLimit),
 	}
-	if result.TeamID != uuid.Nil {
-		user.TeamID = &result.TeamID
+	if result.TeamID.Valid {
+		t := uuid.UUID(result.TeamID.Bytes)
+		user.TeamID = &t
 	}
 	return user, nil
 }
@@ -78,27 +80,30 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.
 		Role:        domain.Role(result.Role),
 		WeeklyLimit: domain.WeeklyLimit(result.WeeklyLimit),
 	}
-	if result.TeamID != uuid.Nil {
-		user.TeamID = &result.TeamID
+	if result.TeamID.Valid {
+		t := uuid.UUID(result.TeamID.Bytes)
+		user.TeamID = &t
 	}
 	return user, nil
 }
 
 func (r *UserRepository) ListByTeam(ctx context.Context, teamID uuid.UUID) ([]domain.User, error) {
-	results, err := r.q.ListUsersByTeam(ctx, teamID)
+	results, err := r.q.ListUsersByTeam(ctx, pgtype.UUID{Bytes: teamID, Valid: true})
 	if err != nil {
 		return nil, err
 	}
 	users := make([]domain.User, len(results))
 	for i, row := range results {
 		users[i] = domain.User{
-			ID:    row.ID,
-			Name:  row.Name,
-			Email: row.Email,
-			Role:  domain.Role(row.Role),
+			ID:          row.ID,
+			Name:        row.Name,
+			Email:       row.Email,
+			Role:        domain.Role(row.Role),
+			WeeklyLimit: domain.WeeklyLimit(row.WeeklyLimit),
 		}
-		if row.TeamID != uuid.Nil {
-			users[i].TeamID = &row.TeamID
+		if row.TeamID.Valid {
+			t := uuid.UUID(row.TeamID.Bytes)
+			users[i].TeamID = &t
 		}
 	}
 	return users, nil

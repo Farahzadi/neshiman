@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -25,15 +26,15 @@ func NewReservationRepository(pool *pgxpool.Pool) ports.ReservationRepository {
 	}
 }
 
-func domainDateToTime(d domain.Date) time.Time {
-	return time.Date(d.Year, time.Month(d.Month), d.Day, 0, 0, 0, 0, time.UTC)
+func domainDateToPgDate(d domain.Date) pgtype.Date {
+	return pgtype.Date{Time: time.Date(d.Year, time.Month(d.Month), d.Day, 0, 0, 0, 0, time.UTC), Valid: true}
 }
 
 func (r *ReservationRepository) Create(ctx context.Context, reservation *domain.Reservation) error {
 	result, err := r.q.CreateReservation(ctx, sqlc.CreateReservationParams{
 		UserID: reservation.UserID,
 		SeatID: reservation.SeatID,
-		Date:   domainDateToTime(reservation.Date),
+		Date:   domainDateToPgDate(reservation.Date),
 	})
 	if err != nil {
 		return err
@@ -54,14 +55,14 @@ func (r *ReservationRepository) GetByID(ctx context.Context, id uuid.UUID) (*dom
 		ID:     result.ID,
 		UserID: result.UserID,
 		SeatID: result.SeatID,
-		Date:   dateFromTime(result.Date),
+		Date:   dateFromPgDate(result.Date),
 	}, nil
 }
 
 func (r *ReservationRepository) GetBySeatAndDate(ctx context.Context, seatID uuid.UUID, date domain.Date) (*domain.Reservation, error) {
 	result, err := r.q.GetReservationBySeatAndDate(ctx, sqlc.GetReservationBySeatAndDateParams{
 		SeatID: seatID,
-		Date:   domainDateToTime(date),
+		Date:   domainDateToPgDate(date),
 	})
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -73,15 +74,15 @@ func (r *ReservationRepository) GetBySeatAndDate(ctx context.Context, seatID uui
 		ID:     result.ID,
 		UserID: result.UserID,
 		SeatID: result.SeatID,
-		Date:   dateFromTime(result.Date),
+		Date:   dateFromPgDate(result.Date),
 	}, nil
 }
 
 func (r *ReservationRepository) ListByUserAndWeek(ctx context.Context, userID uuid.UUID, start, end domain.Date) ([]domain.Reservation, error) {
 	results, err := r.q.ListReservationsByUserAndWeek(ctx, sqlc.ListReservationsByUserAndWeekParams{
 		UserID: userID,
-		Date:   domainDateToTime(start),
-		Date_2: domainDateToTime(end),
+		Date:   domainDateToPgDate(start),
+		Date_2: domainDateToPgDate(end),
 	})
 	if err != nil {
 		return nil, err
@@ -92,7 +93,7 @@ func (r *ReservationRepository) ListByUserAndWeek(ctx context.Context, userID uu
 			ID:     row.ID,
 			UserID: row.UserID,
 			SeatID: row.SeatID,
-			Date:   dateFromTime(row.Date),
+			Date:   dateFromPgDate(row.Date),
 		}
 	}
 	return reservations, nil
@@ -101,8 +102,8 @@ func (r *ReservationRepository) ListByUserAndWeek(ctx context.Context, userID uu
 func (r *ReservationRepository) CountByUserInWeek(ctx context.Context, userID uuid.UUID, start, end domain.Date) (int, error) {
 	count, err := r.q.CountReservationsByUserInWeek(ctx, sqlc.CountReservationsByUserInWeekParams{
 		UserID: userID,
-		Date:   domainDateToTime(start),
-		Date_2: domainDateToTime(end),
+		Date:   domainDateToPgDate(start),
+		Date_2: domainDateToPgDate(end),
 	})
 	if err != nil {
 		return 0, err
@@ -114,6 +115,6 @@ func (r *ReservationRepository) Delete(ctx context.Context, id uuid.UUID) error 
 	return r.q.DeleteReservation(ctx, id)
 }
 
-func dateFromTime(t time.Time) domain.Date {
-	return domain.Date{Year: t.Year(), Month: int(t.Month()), Day: t.Day()}
+func dateFromPgDate(d pgtype.Date) domain.Date {
+	return domain.Date{Year: d.Time.Year(), Month: int(d.Time.Month()), Day: d.Time.Day()}
 }

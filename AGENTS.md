@@ -24,6 +24,8 @@ make dev      # Start all services (postgres + backend + both frontends)
 - **sqlc**: Generates Go structs from SQL queries. Never edit generated files; modify `.sql` sources in `backend/db/query/` and re-run `sqlc generate`.
 - **Frontend**: SolidJS ≠ React. Use signals (`createSignal`), stores (`createStore`), no virtual DOM diffing. JSX compiles to real DOM.
 - **Code quality**: ESLint + Prettier enforced via git hooks. Run lint/format before committing.
+- **Swagger**: Use `swaggo/swag` for OpenAPI spec generation from Go handler annotations. Serves `/swagger/index.html` in dev.
+- **Turborepo**: Frontend monorepo tool for shared packages. Standard layout: `apps/` (admin, viewer) + `packages/` (shared, tsconfig, tailwind-config).
 
 ## Backend Commands
 
@@ -62,3 +64,30 @@ Run from each frontend app directory:
 - **Memberships**: Non-overlapping. A user belongs to exactly one team.
 - **Reservations**: Per-day, one person per seat. Weekly limit configurable per user by team admin.
 - **Cross-team**: Requests require approval from the owning team's admin.
+
+## Session Progress (May 2026)
+
+### Built
+- **Backend** (`backend/`): Full hexagonal Go service with chi router, pgx/v5, sqlc, golang-migrate
+  - Domain: Room, Seat, Team, User, Reservation, CrossTeamRequest + value objects + typed errors
+  - Ports: 6 repository interfaces + TxManager
+  - Application: RoomService, ReservationService (weekly limit enforcement)
+  - HTTP: Chi router, Room + Reservation handlers, CORS/RequestID/Auth/Role middleware, DTOs
+  - Postgres: Pool, TxManager, Room/Seat/User/Reservation repositories
+  - DB: 6 migration pairs + 6 sqlc query files + Mermaid ER diagram
+- **Frontend admin** (`frontend-admin/`): SolidJS + Vite + TailwindCSS + TypeScript scaffold
+  - Pages: Dashboard, Rooms, Seats, Teams (placeholder)
+- **Frontend viewer** (`frontend-viewer/`): SolidJS + Vite + TailwindCSS + TypeScript scaffold
+  - Pages: Dashboard, Reservations (placeholder)
+- **Tooling**: Root Makefile, AGENTS.md, SPEC.md (updated), .gitignore, .editorconfig
+
+### Current state
+- `go build` + `go vet` pass across all packages
+- Postgres running in Docker, 6 migrations applied, `sqlc generate` done
+- Room and Reservation: fully wired end-to-end
+- Seat and User: domain + ports + postgres adapters exist, but no services/handlers/routes
+- Team and CrossTeamRequest: domain + ports + SQL queries exist, no postgres adapters/services/handlers
+- Auth/Role middleware: defined but stubs, not wired to routes
+- Both frontends: SolidJS scaffold with rplaceholders for all feature pages, no API layer
+- Zero tests anywhere
+- Next steps: see `roadmap.md`

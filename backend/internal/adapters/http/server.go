@@ -8,8 +8,6 @@ import (
 	"syscall"
 	"time"
 
-	"neshiman/backend/internal/adapters/http/handlers"
-	"neshiman/backend/internal/adapters/http/middleware"
 	"neshiman/backend/internal/application"
 )
 
@@ -21,12 +19,9 @@ func NewServer(
 	addr string,
 	roomSvc *application.RoomService,
 	reservationSvc *application.ReservationService,
+	teamSvc *application.TeamService,
 ) *Server {
-	r := newRouter(roomSvc, reservationSvc)
-
-	// Global middleware
-	r.Use(middleware.CORS)
-	r.Use(middleware.RequestID)
+	r := newRouter(roomSvc, reservationSvc, teamSvc)
 
 	return &Server{
 		server: &http.Server{

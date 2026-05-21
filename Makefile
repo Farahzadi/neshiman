@@ -2,6 +2,15 @@ DB_URL ?= postgres://postgres:postgres@localhost:5432/neshiman?sslmode=disable
 
 .PHONY: setup deps db-up db-wait db-migrate db-codegen dev build test lint clean
 
+check-docker:
+	$(call check_tool,docker)
+
+check-go:
+	$(call check_tool,go)
+
+check-npm:
+	$(call check_tool,npm)
+
 define check_tool
 	@if ! command -v $(1) >/dev/null 2>&1; then \
 		echo "Error: $(1) is not installed."; \
