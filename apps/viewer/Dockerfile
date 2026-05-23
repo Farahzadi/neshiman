@@ -1,5 +1,5 @@
-FROM node:18-alpine AS builder
-RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+FROM node:22-alpine AS builder
+RUN npm install -g pnpm@9.15.0
 WORKDIR /app
 
 # Copy workspace config for dependency install
