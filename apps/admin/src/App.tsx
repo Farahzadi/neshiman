@@ -4,7 +4,7 @@ import Providers from './providers';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Rooms from './pages/Rooms';
-import Seats from './pages/Seats';
+import RoomEditor from './pages/RoomEditor';
 import Teams from './pages/Teams';
 import Users from './pages/Users';
 import CrossTeamRequests from './pages/CrossTeamRequests';
@@ -17,7 +17,7 @@ const App: Component = () => {
       <Router root={Layout}>
         <Route path="/" component={Dashboard} />
         <Route path="/rooms" component={Rooms} />
-        <Route path="/rooms/:id/seats" component={Seats} />
+        <Route path="/rooms/:id/edit" component={RoomEditor} />
         <Route path="/teams" component={Teams} />
         <Route path="/users" component={Users} />
         <Route path="/cross-team-requests" component={CrossTeamRequests} />

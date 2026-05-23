@@ -54,7 +54,7 @@ const CrossTeamRequests: Component = () => {
   };
 
   return (
-    <div>
+    <div class="p-6">
       <h1 class="text-2xl font-bold mb-6">Cross-Team Requests</h1>
 
       <div class="flex gap-2 mb-4">

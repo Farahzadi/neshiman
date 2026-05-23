@@ -34,13 +34,14 @@ func newRouter(
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware(jwtSecret))
-		r.Route("/rooms", func(r chi.Router) {
-			r.Post("/", roomHandler.Create)
-			r.Get("/", roomHandler.List)
-			r.Get("/{id}", roomHandler.GetByID)
-			r.Put("/{id}", roomHandler.Update)
-			r.Delete("/{id}", roomHandler.Delete)
-		})
+	r.Route("/rooms", func(r chi.Router) {
+		r.Post("/", roomHandler.Create)
+		r.Get("/", roomHandler.List)
+		r.Get("/{id}", roomHandler.GetByID)
+		r.Put("/{id}", roomHandler.Update)
+		r.Put("/{id}/seats", seatHandler.BulkSync)
+		r.Delete("/{id}", roomHandler.Delete)
+	})
 
 		r.Route("/seats", func(r chi.Router) {
 			r.Post("/", seatHandler.Create)

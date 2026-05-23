@@ -294,6 +294,30 @@ export interface paths {
       };
     };
   };
+  "/rooms/{id}/seats": {
+    put: {
+      parameters: {
+        path: {
+          /** Room ID */
+          id: string;
+        };
+        body: {
+          /** Full seat list */
+          request: definitions["dto.BulkSyncSeatsRequest"];
+        };
+      };
+      responses: {
+        /** OK */
+        200: {
+          schema: definitions["dto.BulkSyncSeatsResponse"];
+        };
+        /** Bad Request */
+        400: {
+          schema: string;
+        };
+      };
+    };
+  };
   "/seats": {
     get: {
       parameters: {
@@ -595,6 +619,20 @@ export interface paths {
 }
 
 export interface definitions {
+  "dto.BulkSeatItem": {
+    id?: string;
+    label?: string;
+    pos_x?: number;
+    pos_y?: number;
+    rotation?: number;
+    team_id?: string;
+  };
+  "dto.BulkSyncSeatsRequest": {
+    seats?: definitions["dto.BulkSeatItem"][];
+  };
+  "dto.BulkSyncSeatsResponse": {
+    seats?: definitions["dto.SeatResponse"][];
+  };
   "dto.CreateCrossTeamRequestRequest": {
     /** @description YYYY-MM-DD */
     date?: string;

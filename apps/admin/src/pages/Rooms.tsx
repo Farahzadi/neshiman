@@ -65,7 +65,7 @@ const Rooms: Component = () => {
   };
 
   return (
-    <div>
+    <div class="p-6">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold">Rooms</h1>
         <button onClick={openCreate} class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
@@ -93,8 +93,8 @@ const Rooms: Component = () => {
                     {room.created_at ? new Date(room.created_at).toLocaleDateString() : '-'}
                   </td>
                   <td class="px-4 py-3 text-sm space-x-3">
-                    <A href={`/rooms/${room.id}/seats`} class="text-blue-600 hover:underline">
-                      Seats
+                    <A href={`/rooms/${room.id}/edit`} class="text-blue-600 hover:underline">
+                      Edit Layout
                     </A>
                     <button onClick={() => openEdit(room)} class="text-gray-600 hover:underline">
                       Edit

@@ -96,3 +96,87 @@ func (r *SeatRepository) Update(ctx context.Context, seat *domain.Seat) error {
 func (r *SeatRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.q.DeleteSeat(ctx, id)
 }
+
+func (r *SeatRepository) BulkSync(ctx context.Context, roomID uuid.UUID, seats []domain.Seat) ([]domain.Seat, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	q := r.q.WithTx(tx)
+
+	existing, err := q.ListSeatsByRoom(ctx, roomID)
+	if err != nil {
+		return nil, err
+	}
+
+	existingMap := make(map[uuid.UUID]struct{})
+	for _, s := range existing {
+		existingMap[s.ID] = struct{}{}
+	}
+
+	incomingIDs := make(map[uuid.UUID]struct{})
+	var result []domain.Seat
+
+	for _, seat := range seats {
+		if seat.ID == uuid.Nil {
+			created, err := q.CreateSeat(ctx, sqlc.CreateSeatParams{
+				RoomID:   roomID,
+				TeamID:   seat.TeamID,
+				Label:    seat.Label,
+				PosX:     int32(seat.Position.X),
+				PosY:     int32(seat.Position.Y),
+				Rotation: int32(seat.Rotation),
+			})
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, rowToSeat(created))
+		} else {
+			incomingIDs[seat.ID] = struct{}{}
+			if _, exists := existingMap[seat.ID]; exists {
+				updated, err := q.UpdateSeatFull(ctx, sqlc.UpdateSeatFullParams{
+					ID:       seat.ID,
+					TeamID:   seat.TeamID,
+					Label:    seat.Label,
+					PosX:     int32(seat.Position.X),
+					PosY:     int32(seat.Position.Y),
+					Rotation: int32(seat.Rotation),
+				})
+				if err != nil {
+					return nil, err
+				}
+				result = append(result, rowToSeat(updated))
+			}
+		}
+	}
+
+	for _, s := range existing {
+		if _, stillExists := incomingIDs[s.ID]; !stillExists {
+			if err := q.DeleteSeat(ctx, s.ID); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func rowToSeat(row sqlc.Seat) domain.Seat {
+	return domain.Seat{
+		ID:     row.ID,
+		RoomID: row.RoomID,
+		TeamID: row.TeamID,
+		Label:  row.Label,
+		Position: domain.Position{
+			X: int(row.PosX),
+			Y: int(row.PosY),
+		},
+		Rotation: domain.Rotation(row.Rotation),
+	}
+}

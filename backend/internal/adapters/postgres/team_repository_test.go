@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"neshiman/backend/internal/domain"
 	"neshiman/backend/internal/ports"
 	"testing"
@@ -65,6 +66,38 @@ func TestTeamRepository(t *testing.T) {
 		_, err := repo.GetByID(ctx, team.ID)
 		if err != domain.ErrTeamNotFound {
 			t.Errorf("got %v, want %v", err, domain.ErrTeamNotFound)
+		}
+	})
+
+	t.Run("delete fails with seats", func(t *testing.T) {
+		truncate(t, pool)
+		team := domain.NewTeam("WithSeats")
+		repo.Create(ctx, team)
+
+		roomRepo := NewRoomRepository(pool)
+		seatRepo := NewSeatRepository(pool)
+		room, _ := domain.NewRoom("Room", 10, 10)
+		roomRepo.Create(ctx, room)
+		seatRepo.Create(ctx, mustNewSeat(t, room.ID, team.ID, "S1", 0, 0, 0))
+
+		err := repo.Delete(ctx, team.ID)
+		if !errors.Is(err, domain.ErrTeamHasReferences) {
+			t.Errorf("got %v, want %v", err, domain.ErrTeamHasReferences)
+		}
+	})
+
+	t.Run("delete fails with users", func(t *testing.T) {
+		truncate(t, pool)
+		team := domain.NewTeam("WithUsers")
+		repo.Create(ctx, team)
+
+		userRepo := NewUserRepository(pool)
+		user := domain.NewUser("User", "u@test.com", &team.ID, domain.RoleViewer, 5)
+		userRepo.Create(ctx, user)
+
+		err := repo.Delete(ctx, team.ID)
+		if !errors.Is(err, domain.ErrTeamHasReferences) {
+			t.Errorf("got %v, want %v", err, domain.ErrTeamHasReferences)
 		}
 	})
 

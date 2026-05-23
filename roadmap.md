@@ -69,11 +69,23 @@ Build the admin management UI.
 
 - [x] **Dashboard** — Summary stats (room count, team count)
 - [x] **Rooms page** — CRUD table, create/edit modal form, grid dimensions, delete confirmation
-- [x] **Seats page** — Visual grid editor showing room grid with positioned seats, click to add/select seats, color-coded by team, rotate +90°, delete
+- [x] **Seats page** — Visual grid editor (replaced by Phase 4.5 Room Editor)
 - [x] **Teams page** — CRUD list with expandable inline user management (create/delete users, edit weekly limits)
 - [x] **Users page** — Team filter dropdown, user CRUD table, inline weekly limit editing
-- [x] **Cross-team requests** — Status tab filter (pending/approved/rejected), table with approve/reject actions
+- [x] **Cross-team requests** — Cross-team requests** — Status tab filter (pending/approved/rejected), table with approve/reject actions, user names displayed instead of truncated UUIDs
 - [x] **Layout** — Sidebar navigation with active state highlighting
+
+## Phase 4.5 — Room Visual Editor
+
+Replace the dense CSS-grid seat editor with a canvas-based room editor supporting sparse grids, pan/zoom navigation, and a realistic room view.
+
+- [x] **Backend bulk seats endpoint** — `PUT /api/v1/rooms/{id}/seats` (create/update/delete in one atomic call)
+- [x] **Canvas room editor** — Pan/zoom canvas with grid lines, seats as positioned elements, click-to-place, drag-to-move
+- [x] **Toolbar + properties panel** — Mode switching (select/place), team/rotation/label editing, delete
+- [x] **Dirty state + save** — Track local edits, bulk save on changes
+- [x] **Route change** — `/rooms/:id/edit` replaces `/rooms/:id/seats`
+- [x] **Swagger + types regeneration** — Regenerate API docs and TypeScript types
+- [x] **Backend tests** — 3 service tests + 3 integration tests for bulk sync (144 total)
 
 ## Phase 5 — Frontend Viewer
 

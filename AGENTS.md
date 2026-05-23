@@ -104,10 +104,11 @@ Run from repo root (or via `pnpm --filter <package>`):
 - Postgres running in Docker, 6 migrations applied, `sqlc generate` done
 - Room, Reservation, Team, Seat, User, CrossTeamRequest: all fully wired end-to-end
 - Auth/Role middleware: wired to `/api/v1` routes, stub identity until Phase 6
-- Swagger: `/swagger/index.html` serves browsable API docs (20 paths documented)
+- Swagger: `/swagger/index.html` serves browsable API docs (22 paths documented, incl. bulk sync)
 - Phase 2 complete: Turborepo + pnpm workspaces. Frontend apps moved to `apps/`, shared packages in `packages/`. TypeScript types auto-generated from backend DTOs via openapi-typescript. Shared tsconfig + tailwind preset.
-- **Phase 3 complete**: Seed script (`make seed`), test DB setup in `make test`, 136 passing tests (28 domain + 59 service + 49 integration)
-- **Phase 3.5 complete**: `packages/api-client/` with TanStack Query hooks for all 20 endpoints, typed fetch wrapper with `setAuthHeader()`, query key factory, `QueryClientProvider` + `SolidQueryDevtools` wired into both apps
-- **Phase 4 complete**: Full admin UI with sidebar layout, Rooms CRUD, Seats grid editor (color-coded by team, rotate, delete), Teams with inline user management, Users page with team filter and weekly limit editing, Cross-Team Requests approval queue
+- **Phase 3 complete**: Seed script (`make seed`), test DB setup in `make test`, 144 passing tests (28 domain + 62 service + 54 integration)
+- **Phase 3.5 complete**: `packages/api-client/` with TanStack Query hooks for all 21 endpoints, typed fetch wrapper with `setAuthHeader()`, query key factory, `QueryClientProvider` + `SolidQueryDevtools` wired into both apps
+- **Phase 4 complete**: Full admin UI with sidebar layout, Rooms CRUD, Teams with inline user management, Users page with team filter and weekly limit editing, Cross-Team Requests approval queue
+- **Phase 4.5 complete**: Room Visual Editor — canvas-based pan/zoom room editor with click-to-place and drag-to-move seats, sparse grid support (only placed seats rendered), Select/Place modes, properties panel (label/team/rotation), dirty state tracking, bulk save. Backend `PUT /rooms/{id}/seats` endpoint with atomic transaction. 8 new tests (144 total). Old `Seats.tsx` replaced, route changed to `/rooms/:id/edit`.
 - Viewer app: SolidJS scaffold with placeholders, ready for Phase 5
 - Next steps: see `roadmap.md`

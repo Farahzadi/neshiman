@@ -9,7 +9,7 @@ A seat plan application.
 - There is viewer users, users who could reserve seat for itself and admins who could edit seat plans for everyone.
 - There is superadmin that has every permission and there is team admins that could everything in a team not for other teams.
 - Team admins could request some seat for some day from other team admin, and if other admin accept other teams could reserve other team seats.
-- We show each seat as a rectangle that has an axis. It could rotate and move in a room.
+- We show each seat as a rectangle that has an axis.
 - Each seat has a label too.
 - Each room is a grid that could we change the size of it. 
 

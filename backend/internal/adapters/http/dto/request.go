@@ -55,3 +55,16 @@ type CreateCrossTeamRequestRequest struct {
 type RotateSeatRequest struct {
 	Rotation int `json:"rotation"`
 }
+
+type BulkSeatItem struct {
+	ID       *string `json:"id"`
+	TeamID   string  `json:"team_id"`
+	Label    string  `json:"label"`
+	PosX     int     `json:"pos_x"`
+	PosY     int     `json:"pos_y"`
+	Rotation int     `json:"rotation"`
+}
+
+type BulkSyncSeatsRequest struct {
+	Seats []BulkSeatItem `json:"seats"`
+}

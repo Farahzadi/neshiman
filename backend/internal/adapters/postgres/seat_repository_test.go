@@ -129,6 +129,111 @@ func mustNewSeat(t *testing.T, roomID, teamID uuid.UUID, label string, x, y, rot
 	return s
 }
 
+func TestSeatRepository_BulkSync(t *testing.T) {
+	pool := testPool(t)
+	roomRepo := NewRoomRepository(pool)
+	teamRepo := NewTeamRepository(pool)
+	seatRepo := NewSeatRepository(pool)
+
+	ctx := context.Background()
+
+	makeRoom := func(t *testing.T) domain.Room {
+		t.Helper()
+		room, _ := domain.NewRoom("Room-"+uuid.New().String()[:8], 20, 20)
+		if err := roomRepo.Create(ctx, room); err != nil {
+			t.Fatalf("setup room: %v", err)
+		}
+		return *room
+	}
+
+	makeTeam := func(t *testing.T) domain.Team {
+		t.Helper()
+		team := domain.NewTeam("Team-" + uuid.New().String()[:8])
+		if err := teamRepo.Create(ctx, team); err != nil {
+			t.Fatalf("setup team: %v", err)
+		}
+		return *team
+	}
+
+	t.Run("sync seats from empty", func(t *testing.T) {
+		truncate(t, pool)
+		room := makeRoom(t)
+		team := makeTeam(t)
+
+		seats := []domain.Seat{
+			{TeamID: team.ID, Label: "S1", Position: domain.Position{X: 0, Y: 0}, Rotation: domain.Rotation0},
+			{TeamID: team.ID, Label: "S2", Position: domain.Position{X: 2, Y: 3}, Rotation: domain.Rotation90},
+		}
+		result, err := seatRepo.BulkSync(ctx, room.ID, seats)
+		if err != nil {
+			t.Fatalf("BulkSync: %v", err)
+		}
+		if len(result) != 2 {
+			t.Fatalf("got %d seats, want 2", len(result))
+		}
+		for _, s := range result {
+			if s.ID == uuid.Nil {
+				t.Error("expected non-nil ID on created seat")
+			}
+		}
+	})
+
+	t.Run("sync with updates and deletes", func(t *testing.T) {
+		truncate(t, pool)
+		room := makeRoom(t)
+		team := makeTeam(t)
+
+		existing := mustNewSeat(t, room.ID, team.ID, "Keep", 0, 0, 0)
+		toDelete := mustNewSeat(t, room.ID, team.ID, "Del", 5, 5, 0)
+		seatRepo.Create(ctx, existing)
+		seatRepo.Create(ctx, toDelete)
+
+		updatedTeam := makeTeam(t)
+		seats := []domain.Seat{
+			{ID: existing.ID, TeamID: updatedTeam.ID, Label: "Changed", Position: domain.Position{X: 10, Y: 10}, Rotation: domain.Rotation180},
+		}
+		result, err := seatRepo.BulkSync(ctx, room.ID, seats)
+		if err != nil {
+			t.Fatalf("BulkSync: %v", err)
+		}
+		if len(result) != 1 {
+			t.Fatalf("got %d seats, want 1", len(result))
+		}
+		got := result[0]
+		if got.ID != existing.ID {
+			t.Error("expected same ID for updated seat")
+		}
+		if got.Label != "Changed" || got.Position.X != 10 || got.Position.Y != 10 || got.Rotation != domain.Rotation180 {
+			t.Errorf("got %+v, want changed seat", got)
+		}
+		if got.TeamID != updatedTeam.ID {
+			t.Errorf("got team %v, want %v", got.TeamID, updatedTeam.ID)
+		}
+
+		_, err = seatRepo.GetByID(ctx, toDelete.ID)
+		if err != domain.ErrSeatNotFound {
+			t.Error("expected deleted seat to be removed")
+		}
+	})
+
+	t.Run("empty seat list deletes all", func(t *testing.T) {
+		truncate(t, pool)
+		room := makeRoom(t)
+		team := makeTeam(t)
+
+		seatRepo.Create(ctx, mustNewSeat(t, room.ID, team.ID, "A", 0, 0, 0))
+		seatRepo.Create(ctx, mustNewSeat(t, room.ID, team.ID, "B", 1, 1, 0))
+
+		result, err := seatRepo.BulkSync(ctx, room.ID, []domain.Seat{})
+		if err != nil {
+			t.Fatalf("BulkSync: %v", err)
+		}
+		if len(result) != 0 {
+			t.Errorf("got %d seats, want 0", len(result))
+		}
+	})
+}
+
 func TestSeatRepositoryInterface(t *testing.T) {
 	var _ ports.SeatRepository = (*SeatRepository)(nil)
 }

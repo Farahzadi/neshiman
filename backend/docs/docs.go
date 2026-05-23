@@ -536,6 +536,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/rooms/{id}/seats": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Rooms"
+                ],
+                "summary": "Bulk sync seats for a room",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Room ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Full seat list",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.BulkSyncSeatsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.BulkSyncSeatsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/seats": {
             "get": {
                 "produces": [
@@ -1084,6 +1130,51 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.BulkSeatItem": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "pos_x": {
+                    "type": "integer"
+                },
+                "pos_y": {
+                    "type": "integer"
+                },
+                "rotation": {
+                    "type": "integer"
+                },
+                "team_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.BulkSyncSeatsRequest": {
+            "type": "object",
+            "properties": {
+                "seats": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.BulkSeatItem"
+                    }
+                }
+            }
+        },
+        "dto.BulkSyncSeatsResponse": {
+            "type": "object",
+            "properties": {
+                "seats": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.SeatResponse"
+                    }
+                }
+            }
+        },
         "dto.CreateCrossTeamRequestRequest": {
             "type": "object",
             "properties": {

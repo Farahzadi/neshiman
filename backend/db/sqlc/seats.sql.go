@@ -151,3 +151,43 @@ func (q *Queries) UpdateSeat(ctx context.Context, arg UpdateSeatParams) (Seat, e
 	)
 	return i, err
 }
+
+const updateSeatFull = `-- name: UpdateSeatFull :one
+UPDATE seats
+SET label = $2, team_id = $3, pos_x = $4, pos_y = $5, rotation = $6, updated_at = now()
+WHERE id = $1
+RETURNING id, room_id, team_id, label, pos_x, pos_y, rotation, created_at, updated_at
+`
+
+type UpdateSeatFullParams struct {
+	ID       uuid.UUID `db:"id" json:"id"`
+	Label    string    `db:"label" json:"label"`
+	TeamID   uuid.UUID `db:"team_id" json:"team_id"`
+	PosX     int32     `db:"pos_x" json:"pos_x"`
+	PosY     int32     `db:"pos_y" json:"pos_y"`
+	Rotation int32     `db:"rotation" json:"rotation"`
+}
+
+func (q *Queries) UpdateSeatFull(ctx context.Context, arg UpdateSeatFullParams) (Seat, error) {
+	row := q.db.QueryRow(ctx, updateSeatFull,
+		arg.ID,
+		arg.Label,
+		arg.TeamID,
+		arg.PosX,
+		arg.PosY,
+		arg.Rotation,
+	)
+	var i Seat
+	err := row.Scan(
+		&i.ID,
+		&i.RoomID,
+		&i.TeamID,
+		&i.Label,
+		&i.PosX,
+		&i.PosY,
+		&i.Rotation,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

@@ -17,4 +17,5 @@ var (
 	ErrInvalidGridSize       = errors.New("grid width and height must be positive")
 	ErrInvalidRotation       = errors.New("rotation must be 0, 90, 180, or 270")
 	ErrPositionOutOfBounds   = errors.New("seat position is outside the room grid")
+	ErrTeamHasReferences     = errors.New("team has seats or users assigned and cannot be deleted")
 )

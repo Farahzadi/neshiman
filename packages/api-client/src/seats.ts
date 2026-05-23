@@ -7,6 +7,8 @@ type Seat = definitions['dto.SeatResponse'];
 type CreateSeat = definitions['dto.CreateSeatRequest'];
 type MoveSeat = definitions['dto.MoveSeatRequest'];
 type RotateSeat = definitions['dto.RotateSeatRequest'];
+type BulkSyncSeatsRequest = definitions['dto.BulkSyncSeatsRequest'];
+type BulkSyncSeatsResponse = definitions['dto.BulkSyncSeatsResponse'];
 
 export function useSeatsByRoom(roomId: () => string) {
   return useQuery(() => ({
@@ -65,6 +67,18 @@ export function useRotateSeat() {
     onSuccess: (seat) => {
       qc.invalidateQueries({ queryKey: queryKeys.seats.detail(seat.id!) });
       qc.invalidateQueries({ queryKey: queryKeys.rooms.seats(seat.room_id!) });
+    },
+  }));
+}
+
+export function useBulkSyncSeats() {
+  const qc = useQueryClient();
+  return useMutation(() => ({
+    mutationFn: ({ roomId, data }: { roomId: string; data: BulkSyncSeatsRequest }) =>
+      apiFetch<BulkSyncSeatsResponse>(`/v1/rooms/${roomId}/seats`, { method: 'PUT', body: JSON.stringify(data) }),
+    onSuccess: (result, vars) => {
+      qc.setQueryData(queryKeys.rooms.seats(vars.roomId), result.seats);
+      qc.invalidateQueries({ queryKey: queryKeys.seats.all });
     },
   }));
 }

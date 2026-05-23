@@ -113,6 +113,18 @@ func CrossTeamRequestToResponse(r *domain.CrossTeamRequest) CrossTeamRequestResp
 	}
 }
 
+type BulkSyncSeatsResponse struct {
+	Seats []SeatResponse `json:"seats"`
+}
+
+func SeatListToResponse(seats []domain.Seat) []SeatResponse {
+	responses := make([]SeatResponse, len(seats))
+	for i, seat := range seats {
+		responses[i] = SeatToResponse(&seat)
+	}
+	return responses
+}
+
 func formatDate(d domain.Date) string {
 	return time.Date(d.Year, time.Month(d.Month), d.Day, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
 }

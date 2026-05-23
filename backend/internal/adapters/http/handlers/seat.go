@@ -6,6 +6,7 @@ import (
 
 	"neshiman/backend/internal/adapters/http/dto"
 	"neshiman/backend/internal/application"
+	"neshiman/backend/internal/domain"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -156,6 +157,63 @@ func (h *SeatHandler) Rotate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, dto.SeatToResponse(seat))
+}
+
+// BulkSyncSeats syncs the full list of seats for a room
+// @Summary      Bulk sync seats for a room
+// @Tags         Rooms
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string                    true  "Room ID"
+// @Param        request  body      dto.BulkSyncSeatsRequest   true  "Full seat list"
+// @Success      200      {object}  dto.BulkSyncSeatsResponse
+// @Failure      400      {string}  string
+// @Router       /rooms/{id}/seats [put]
+func (h *SeatHandler) BulkSync(w http.ResponseWriter, r *http.Request) {
+	roomID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid room id", http.StatusBadRequest)
+		return
+	}
+	var req dto.BulkSyncSeatsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	seats := make([]domain.Seat, len(req.Seats))
+	for i, item := range req.Seats {
+		var id uuid.UUID
+		if item.ID != nil {
+			id, err = uuid.Parse(*item.ID)
+			if err != nil {
+				http.Error(w, "invalid seat id in list", http.StatusBadRequest)
+				return
+			}
+		}
+		teamID, err := uuid.Parse(item.TeamID)
+		if err != nil {
+			http.Error(w, "invalid team_id in seat list", http.StatusBadRequest)
+			return
+		}
+		seats[i] = domain.Seat{
+			ID:     id,
+			TeamID: teamID,
+			Label:  item.Label,
+			Position: domain.Position{
+				X: item.PosX,
+				Y: item.PosY,
+			},
+			Rotation: domain.Rotation(item.Rotation),
+		}
+	}
+	result, err := h.seatSvc.BulkSyncSeats(r.Context(), roomID, seats)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, http.StatusOK, dto.BulkSyncSeatsResponse{
+		Seats: dto.SeatListToResponse(result),
+	})
 }
 
 // DeleteSeat deletes a seat
