@@ -1,27 +1,33 @@
-import { Component, createSignal, For } from 'solid-js';
+import { Component, createMemo, For } from 'solid-js';
 import { A, useLocation, useNavigate } from '@solidjs/router';
 import type { RouteSectionProps } from '@solidjs/router';
 import { setAuthHeader } from '@neshiman/api-client';
-import UserBar from '../ui/UserBar';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: '◷' },
-  { href: '/rooms', label: 'Rooms', icon: '☰' },
-  { href: '/reservations', label: 'Reservations', icon: '☰' },
-  { href: '/requests', label: 'Requests', icon: '☰' },
+  { href: '/', label: 'Dashboard' },
+  { href: '/rooms', label: 'Rooms' },
+  { href: '/reservations', label: 'Reservations' },
+  { href: '/requests', label: 'Requests' },
 ];
+
+function getUser() {
+  try {
+    const raw = localStorage.getItem('neshiman_user');
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
 
 const Layout: Component<RouteSectionProps> = (props) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [currentUserId, setCurrentUserId] = createSignal(
-    localStorage.getItem('viewer_user_id') ?? ''
-  );
 
-  const handleSelectUser = (id: string) => {
-    localStorage.setItem('viewer_user_id', id);
-    setCurrentUserId(id);
-    setAuthHeader(() => id);
+  const currentUser = createMemo(() => getUser());
+
+  const handleLogout = () => {
+    localStorage.removeItem('neshiman_token');
+    localStorage.removeItem('neshiman_user');
+    setAuthHeader(() => null);
+    navigate('/login', { replace: true });
   };
 
   return (
@@ -57,7 +63,21 @@ const Layout: Component<RouteSectionProps> = (props) => {
                 </For>
               </nav>
             </div>
-            <UserBar currentUserId={currentUserId()} onSelectUser={handleSelectUser} />
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2 text-sm">
+                <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                  {currentUser()?.name?.charAt(0)?.toUpperCase() ?? '?'}
+                </div>
+                <span class="text-sm font-medium text-gray-700">{currentUser()?.name ?? 'User'}</span>
+                <span class="text-xs text-gray-400 hidden sm:inline">{currentUser()?.role}</span>
+              </div>
+              <button
+                onClick={handleLogout}
+                class="text-xs text-gray-500 hover:text-red-600 transition-colors ml-2"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>

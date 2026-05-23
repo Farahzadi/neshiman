@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"neshiman/backend/internal/adapters/http/dto"
@@ -44,7 +45,11 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 		}
 		teamID = &id
 	}
-	user, err := h.userSvc.CreateUser(r.Context(), req.Name, req.Email, teamID, domain.Role(req.Role), domain.WeeklyLimit(req.WeeklyLimit))
+	email := ""
+	if req.Email != nil {
+		email = *req.Email
+	}
+	user, err := h.userSvc.CreateUser(r.Context(), req.Name, email, teamID, domain.Role(req.Role), domain.WeeklyLimit(req.WeeklyLimit))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -167,7 +172,7 @@ func (h *UserHandler) UpdateWeeklyLimit(w http.ResponseWriter, r *http.Request) 
 // @Summary      Delete a user
 // @Tags         Users
 // @Param        id   path      string  true  "User ID"
-// @Success      204  {string}  string
+// @Success      200  {object}  dto.DeleteResponse
 // @Router       /users/{id} [delete]
 func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
@@ -176,8 +181,12 @@ func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.userSvc.DeleteUser(r.Context(), id); err != nil {
+		if errors.Is(err, domain.ErrCannotDeleteSuperAdmin) {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	writeJSON(w, http.StatusOK, dto.DeleteResponse{Deleted: true})
 }

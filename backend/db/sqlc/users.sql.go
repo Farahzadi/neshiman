@@ -15,12 +15,12 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (name, email, team_id, role, weekly_limit)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, name, email, team_id, role, weekly_limit, created_at, updated_at
+RETURNING id, name, email, team_id, role, weekly_limit, created_at, updated_at, password_hash, deleted_at
 `
 
 type CreateUserParams struct {
 	Name        string      `db:"name" json:"name"`
-	Email       string      `db:"email" json:"email"`
+	Email       pgtype.Text `db:"email" json:"email"`
 	TeamID      pgtype.UUID `db:"team_id" json:"team_id"`
 	Role        string      `db:"role" json:"role"`
 	WeeklyLimit int32       `db:"weekly_limit" json:"weekly_limit"`
@@ -44,24 +44,17 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.WeeklyLimit,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.PasswordHash,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
-const deleteUser = `-- name: DeleteUser :exec
-DELETE FROM users WHERE id = $1
-`
-
-func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteUser, id)
-	return err
-}
-
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, name, email, team_id, role, weekly_limit, created_at, updated_at FROM users WHERE email = $1
+SELECT id, name, email, team_id, role, weekly_limit, created_at, updated_at, password_hash, deleted_at FROM users WHERE email = $1 AND deleted_at IS NULL
 `
 
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+func (q *Queries) GetUserByEmail(ctx context.Context, email pgtype.Text) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByEmail, email)
 	var i User
 	err := row.Scan(
@@ -73,12 +66,14 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.WeeklyLimit,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.PasswordHash,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, name, email, team_id, role, weekly_limit, created_at, updated_at FROM users WHERE id = $1
+SELECT id, name, email, team_id, role, weekly_limit, created_at, updated_at, password_hash, deleted_at FROM users WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
@@ -93,12 +88,36 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.WeeklyLimit,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.PasswordHash,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getUserByName = `-- name: GetUserByName :one
+SELECT id, name, email, team_id, role, weekly_limit, created_at, updated_at, password_hash, deleted_at FROM users WHERE name = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) GetUserByName(ctx context.Context, name string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByName, name)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.TeamID,
+		&i.Role,
+		&i.WeeklyLimit,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.PasswordHash,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, name, email, team_id, role, weekly_limit, created_at, updated_at FROM users ORDER BY name
+SELECT id, name, email, team_id, role, weekly_limit, created_at, updated_at, password_hash, deleted_at FROM users WHERE deleted_at IS NULL ORDER BY name
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
@@ -119,6 +138,8 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.WeeklyLimit,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.PasswordHash,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -131,7 +152,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 }
 
 const listUsersByTeam = `-- name: ListUsersByTeam :many
-SELECT id, name, email, team_id, role, weekly_limit, created_at, updated_at FROM users WHERE team_id = $1 ORDER BY name
+SELECT id, name, email, team_id, role, weekly_limit, created_at, updated_at, password_hash, deleted_at FROM users WHERE team_id = $1 AND deleted_at IS NULL ORDER BY name
 `
 
 func (q *Queries) ListUsersByTeam(ctx context.Context, teamID pgtype.UUID) ([]User, error) {
@@ -152,6 +173,8 @@ func (q *Queries) ListUsersByTeam(ctx context.Context, teamID pgtype.UUID) ([]Us
 			&i.WeeklyLimit,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.PasswordHash,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -163,10 +186,34 @@ func (q *Queries) ListUsersByTeam(ctx context.Context, teamID pgtype.UUID) ([]Us
 	return items, nil
 }
 
+const softDeleteUser = `-- name: SoftDeleteUser :exec
+UPDATE users SET deleted_at = now() WHERE id = $1
+`
+
+func (q *Queries) SoftDeleteUser(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, softDeleteUser, id)
+	return err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :exec
+UPDATE users SET password_hash = $2, updated_at = now()
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdateUserPasswordParams struct {
+	ID           uuid.UUID `db:"id" json:"id"`
+	PasswordHash string    `db:"password_hash" json:"password_hash"`
+}
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
+	_, err := q.db.Exec(ctx, updateUserPassword, arg.ID, arg.PasswordHash)
+	return err
+}
+
 const updateUserWeeklyLimit = `-- name: UpdateUserWeeklyLimit :one
 UPDATE users SET weekly_limit = $2, updated_at = now()
-WHERE id = $1
-RETURNING id, name, email, team_id, role, weekly_limit, created_at, updated_at
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, name, email, team_id, role, weekly_limit, created_at, updated_at, password_hash, deleted_at
 `
 
 type UpdateUserWeeklyLimitParams struct {
@@ -186,6 +233,8 @@ func (q *Queries) UpdateUserWeeklyLimit(ctx context.Context, arg UpdateUserWeekl
 		&i.WeeklyLimit,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.PasswordHash,
+		&i.DeletedAt,
 	)
 	return i, err
 }

@@ -13,7 +13,10 @@ const queryClient = new QueryClient({
 
 const Providers: ParentComponent = (props) => {
   onMount(() => {
-    setAuthHeader(() => localStorage.getItem('viewer_user_id'));
+    const token = localStorage.getItem('neshiman_token');
+    if (token) {
+      setAuthHeader(() => token);
+    }
   });
 
   return (

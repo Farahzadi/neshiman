@@ -1,9 +1,9 @@
-import { Component, For, createSignal } from 'solid-js';
-import { A, useLocation } from '@solidjs/router';
+import { Component, createMemo, For, createSignal } from 'solid-js';
+import { A, useLocation, useNavigate } from '@solidjs/router';
 import type { RouteSectionProps } from '@solidjs/router';
-import UserBar from './UserBar';
+import { setAuthHeader } from '@neshiman/api-client';
 
-const icons = {
+const icons: Record<string, () => any> = {
   Dashboard: () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 shrink-0">
       <rect x="3" y="3" width="7" height="7" />
@@ -59,9 +59,23 @@ const ExpandIcon = () => (
   </svg>
 );
 
+function getCurrentUser() {
+  try { return JSON.parse(localStorage.getItem('neshiman_user') ?? 'null'); }
+  catch { return null; }
+}
+
 const Layout: Component<RouteSectionProps> = (props) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = createSignal(false);
+  const currentUser = createMemo(() => getCurrentUser());
+
+  const handleLogout = () => {
+    localStorage.removeItem('neshiman_token');
+    localStorage.removeItem('neshiman_user');
+    setAuthHeader(() => null);
+    navigate('/login', { replace: true });
+  };
 
   return (
     <div class="min-h-screen flex bg-gray-50">
@@ -83,7 +97,7 @@ const Layout: Component<RouteSectionProps> = (props) => {
         <ul class="flex-1 p-3 space-y-1">
           <For each={navItems}>
             {(item) => {
-              const Icon = icons[item.label as keyof typeof icons];
+              const Icon = icons[item.label];
               return (
                 <li>
                   <A
@@ -111,7 +125,21 @@ const Layout: Component<RouteSectionProps> = (props) => {
         </button>
       </nav>
       <main class="flex-1 flex flex-col overflow-hidden">
-        <UserBar />
+        <div class="flex items-center justify-end gap-3 px-6 py-2 bg-white border-b text-sm">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+              {currentUser()?.name?.charAt(0)?.toUpperCase() ?? '?'}
+            </div>
+            <span class="font-medium text-gray-700">{currentUser()?.name ?? 'User'}</span>
+            <span class="text-xs text-gray-400">{currentUser()?.role}</span>
+          </div>
+          <button
+            onClick={handleLogout}
+            class="text-xs text-gray-500 hover:text-red-600 transition-colors ml-2"
+          >
+            Logout
+          </button>
+        </div>
         <div class="flex flex-col flex-1 overflow-auto">
           {props.children}
         </div>

@@ -10,6 +10,8 @@ import {
   ApiError,
 } from '@neshiman/api-client';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
+import { showToast } from '../stores/toast';
 
 const Teams: Component = () => {
   const teams = useTeams();
@@ -36,6 +38,9 @@ const Teams: Component = () => {
   const deleteUser = useDeleteUser();
   const updateLimit = useUpdateWeeklyLimit();
 
+  const [deleteTeamTarget, setDeleteTeamTarget] = createSignal<string | null>(null);
+  const [deleteUserTarget, setDeleteUserTarget] = createSignal<string | null>(null);
+
   const handleCreateTeam = async (e: Event) => {
     e.preventDefault();
     setTeamError('');
@@ -49,12 +54,19 @@ const Teams: Component = () => {
   };
 
   const handleDeleteTeam = async (id: string) => {
-    if (!confirm('Delete this team and all its users?')) return;
+    setDeleteTeamTarget(id);
+  };
+
+  const confirmDeleteTeam = async () => {
+    const id = deleteTeamTarget();
+    if (!id) return;
     try {
       await deleteTeam.mutateAsync(id);
+      setDeleteTeamTarget(null);
+      showToast('Team deleted.', 'success');
       if (expandedTeamId() === id) setExpandedTeamId(null);
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : 'Failed to delete team');
+      showToast(err instanceof ApiError ? err.message : 'Failed to delete team', 'error');
     }
   };
 
@@ -80,11 +92,18 @@ const Teams: Component = () => {
   };
 
   const handleDeleteUser = async (id: string) => {
-    if (!confirm('Delete this user?')) return;
+    setDeleteUserTarget(id);
+  };
+
+  const confirmDeleteUser = async () => {
+    const id = deleteUserTarget();
+    if (!id) return;
     try {
       await deleteUser.mutateAsync(id);
+      setDeleteUserTarget(null);
+      showToast('User removed from team.', 'success');
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : 'Failed to delete user');
+      showToast(err instanceof ApiError ? err.message : 'Failed to delete user', 'error');
     }
   };
 
@@ -94,8 +113,9 @@ const Teams: Component = () => {
     try {
       await updateLimit.mutateAsync({ id, data: { weekly_limit: edit.limit } });
       setEditingLimit(null);
+      showToast('Weekly limit updated.', 'success');
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : 'Failed to update limit');
+      showToast(err instanceof ApiError ? err.message : 'Failed to update limit', 'error');
     }
   };
 
@@ -179,7 +199,7 @@ const Teams: Component = () => {
                                   <input
                                     type="number"
                                     min="0"
-                                    max="7"
+                                    max="5"
                                     value={editingLimit()?.limit ?? 2}
                                     onInput={(e) => setEditingLimit({ id: user.id!, limit: Number(e.currentTarget.value) })}
                                     class="w-16 border rounded px-2 py-1 text-sm"
@@ -200,12 +220,14 @@ const Teams: Component = () => {
                               </Show>
                             </td>
                             <td class="py-2">
-                              <button
-                                onClick={() => handleDeleteUser(user.id!)}
-                                class="text-red-600 hover:underline text-xs"
-                              >
-                                Remove
-                              </button>
+                              <Show when={user.role !== 'superadmin'}>
+                                <button
+                                  onClick={() => handleDeleteUser(user.id!)}
+                                  class="text-red-600 hover:underline text-xs"
+                                >
+                                  Remove
+                                </button>
+                              </Show>
                             </td>
                           </tr>
                         )}
@@ -263,12 +285,12 @@ const Teams: Component = () => {
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email (optional)</label>
             <input
-              type="email"
+              type="text"
               value={userEmail()}
               onInput={(e) => setUserEmail(e.currentTarget.value)}
-              required
+              placeholder="user@example.com"
               class="w-full border rounded-md px-3 py-2 text-sm"
             />
           </div>
@@ -289,7 +311,7 @@ const Teams: Component = () => {
             <input
               type="number"
               min="0"
-              max="7"
+              max="5"
               value={userLimit()}
               onInput={(e) => setUserLimit(Number(e.currentTarget.value))}
               class="w-full border rounded-md px-3 py-2 text-sm"
@@ -306,6 +328,22 @@ const Teams: Component = () => {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        open={deleteTeamTarget() !== null}
+        title="Delete Team"
+        description="Are you sure you want to delete this team? Team members will not be deleted."
+        onConfirm={confirmDeleteTeam}
+        onCancel={() => setDeleteTeamTarget(null)}
+      />
+
+      <ConfirmModal
+        open={deleteUserTarget() !== null}
+        title="Delete User"
+        description="Are you sure you want to delete this user?"
+        onConfirm={confirmDeleteUser}
+        onCancel={() => setDeleteUserTarget(null)}
+      />
     </div>
   );
 };

@@ -6,6 +6,7 @@ import type { definitions } from '@neshiman/api-types';
 type User = definitions['dto.UserResponse'];
 type CreateUser = definitions['dto.CreateUserRequest'];
 type UpdateWeeklyLimit = definitions['dto.UpdateWeeklyLimitRequest'];
+type DeleteResponse = definitions['dto.DeleteResponse'];
 
 export function useUsers(teamId: () => string) {
   return useQuery(() => ({
@@ -46,7 +47,7 @@ export function useDeleteUser() {
   const qc = useQueryClient();
   return useMutation(() => ({
     mutationFn: (id: string) =>
-      apiFetch<void>(`/v1/users/${id}`, { method: 'DELETE' }),
+      apiFetch<DeleteResponse>(`/v1/users/${id}`, { method: 'DELETE' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.users.all }),
   }));
 }

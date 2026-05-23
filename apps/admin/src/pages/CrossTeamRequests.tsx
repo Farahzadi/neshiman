@@ -8,6 +8,7 @@ import {
   ApiError,
 } from '@neshiman/api-client';
 import type { definitions } from '@neshiman/api-types';
+import { showToast } from '../stores/toast';
 
 type CrossTeamRequest = definitions['dto.CrossTeamRequestResponse'];
 
@@ -40,16 +41,18 @@ const CrossTeamRequests: Component = () => {
   const handleApprove = async (id: string) => {
     try {
       await approve.mutateAsync(id);
+      showToast('Request approved.', 'success');
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : 'Failed to approve request');
+      showToast(err instanceof ApiError ? err.message : 'Failed to approve request', 'error');
     }
   };
 
   const handleReject = async (id: string) => {
     try {
       await reject.mutateAsync(id);
+      showToast('Request rejected.', 'success');
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : 'Failed to reject request');
+      showToast(err instanceof ApiError ? err.message : 'Failed to reject request', 'error');
     }
   };
 

@@ -1,6 +1,10 @@
 package domain
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type RequestStatus string
 
@@ -16,6 +20,7 @@ type CrossTeamRequest struct {
 	TargetSeatID     uuid.UUID
 	Date             Date
 	Status           RequestStatus
+	DeletedAt        *time.Time
 }
 
 func NewCrossTeamRequest(requestingUserID, targetSeatID uuid.UUID, date Date) *CrossTeamRequest {

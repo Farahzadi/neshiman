@@ -116,7 +116,7 @@ func (h *RoomHandler) Update(w http.ResponseWriter, r *http.Request) {
 // @Summary      Delete a room
 // @Tags         Rooms
 // @Param        id   path      string  true  "Room ID"
-// @Success      204  {string}  string
+// @Success      200  {object}  dto.DeleteResponse
 // @Failure      500  {string}  string
 // @Router       /rooms/{id} [delete]
 func (h *RoomHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -125,11 +125,12 @@ func (h *RoomHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid room id", http.StatusBadRequest)
 		return
 	}
-	if err := h.roomSvc.DeleteRoom(r.Context(), id); err != nil {
+	n, err := h.roomSvc.DeleteRoom(r.Context(), id)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	writeJSON(w, http.StatusOK, dto.DeleteResponse{Deleted: true, SeatsDeleted: &n})
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {

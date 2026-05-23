@@ -3,6 +3,8 @@ import { A } from '@solidjs/router';
 import { useRooms, useCreateRoom, useUpdateRoom, useDeleteRoom, ApiError } from '@neshiman/api-client';
 import type { definitions } from '@neshiman/api-types';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
+import { showToast } from '../stores/toast';
 
 type Room = definitions['dto.RoomResponse'];
 
@@ -18,6 +20,7 @@ const Rooms: Component = () => {
   const [gridWidth, setGridWidth] = createSignal(10);
   const [gridHeight, setGridHeight] = createSignal(8);
   const [error, setError] = createSignal('');
+  const [deleteTarget, setDeleteTarget] = createSignal<string | null>(null);
 
   const openCreate = () => {
     setEditingId(null);
@@ -51,16 +54,26 @@ const Rooms: Component = () => {
       }
       setShowForm(false);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to save room');
+      showToast(err instanceof ApiError ? err.message : 'Failed to save room', 'error');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this room and all its seats?')) return;
+    setDeleteTarget(id);
+  };
+
+  const confirmDelete = async () => {
+    const id = deleteTarget();
+    if (!id) return;
     try {
-      await deleteRoom.mutateAsync(id);
+      const res = await deleteRoom.mutateAsync(id);
+      setDeleteTarget(null);
+      const msg = res?.seats_deleted
+        ? `Room deleted. ${res.seats_deleted} seat(s) removed.`
+        : 'Room deleted.';
+      showToast(msg, 'success');
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : 'Failed to delete room');
+      showToast(err instanceof ApiError ? err.message : 'Failed to delete room', 'error');
     }
   };
 
@@ -168,6 +181,14 @@ const Rooms: Component = () => {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        open={deleteTarget() !== null}
+        title="Delete Room"
+        description="This will permanently delete this room and all its seats. This action cannot be undone."
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 };

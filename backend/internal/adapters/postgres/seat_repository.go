@@ -94,7 +94,11 @@ func (r *SeatRepository) Update(ctx context.Context, seat *domain.Seat) error {
 }
 
 func (r *SeatRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.q.DeleteSeat(ctx, id)
+	return r.q.SoftDeleteSeat(ctx, id)
+}
+
+func (r *SeatRepository) DeleteByRoom(ctx context.Context, roomID uuid.UUID) error {
+	return r.q.SoftDeleteSeatsByRoom(ctx, roomID)
 }
 
 func (r *SeatRepository) BulkSync(ctx context.Context, roomID uuid.UUID, seats []domain.Seat) ([]domain.Seat, error) {
@@ -154,7 +158,7 @@ func (r *SeatRepository) BulkSync(ctx context.Context, roomID uuid.UUID, seats [
 
 	for _, s := range existing {
 		if _, stillExists := incomingIDs[s.ID]; !stillExists {
-			if err := q.DeleteSeat(ctx, s.ID); err != nil {
+			if err := q.SoftDeleteSeat(ctx, s.ID); err != nil {
 				return nil, err
 			}
 		}

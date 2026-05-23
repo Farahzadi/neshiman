@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -21,10 +22,24 @@ func AuthMiddleware(jwtSecret string) func(http.Handler) http.Handler {
 
 			authHeader := r.Header.Get("Authorization")
 			if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
-				token := strings.TrimPrefix(authHeader, "Bearer ")
-				// Phase 6: real JWT validation. For now, treat token as raw user ID.
-				if parsed, err := uuid.Parse(token); err == nil {
-					userID = parsed
+				tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+				token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+					if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+						return nil, jwt.ErrSignatureInvalid
+					}
+					return []byte(jwtSecret), nil
+				})
+				if err == nil && token.Valid {
+					if claims, ok := token.Claims.(jwt.MapClaims); ok {
+						if sub, ok := claims["sub"].(string); ok {
+							if parsed, err := uuid.Parse(sub); err == nil {
+								userID = parsed
+							}
+						}
+						if role, ok := claims["role"].(string); ok {
+							userRole = role
+						}
+					}
 				}
 			}
 
@@ -40,4 +55,11 @@ func UserIDFromContext(ctx context.Context) uuid.UUID {
 		return id
 	}
 	return uuid.Nil
+}
+
+func UserRoleFromContext(ctx context.Context) string {
+	if role, ok := ctx.Value(UserRoleKey).(string); ok {
+		return role
+	}
+	return ""
 }

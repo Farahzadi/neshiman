@@ -1,14 +1,20 @@
 package domain
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type User struct {
-	ID          uuid.UUID
-	Name        string
-	Email       string
-	TeamID      *uuid.UUID
-	Role        Role
-	WeeklyLimit WeeklyLimit
+	ID           uuid.UUID
+	Name         string
+	Email        string
+	PasswordHash string
+	TeamID       *uuid.UUID
+	Role         Role
+	WeeklyLimit  WeeklyLimit
+	DeletedAt    *time.Time
 }
 
 func NewUser(name, email string, teamID *uuid.UUID, role Role, weeklyLimit WeeklyLimit) *User {

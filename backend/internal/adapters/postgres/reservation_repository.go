@@ -149,7 +149,7 @@ func (r *ReservationRepository) CountByUserInWeek(ctx context.Context, userID uu
 }
 
 func (r *ReservationRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.q.DeleteReservation(ctx, id)
+	return r.q.SoftDeleteReservation(ctx, id)
 }
 
 func dateFromPgDate(d pgtype.Date) domain.Date {

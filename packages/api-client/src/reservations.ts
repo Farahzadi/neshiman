@@ -5,6 +5,7 @@ import type { definitions } from '@neshiman/api-types';
 
 type Reservation = definitions['dto.ReservationResponse'];
 type CreateReservation = definitions['dto.CreateReservationRequest'];
+type DeleteResponse = definitions['dto.DeleteResponse'];
 
 export function useReservationsByDate(date: () => string) {
   return useQuery(() => ({
@@ -35,7 +36,7 @@ export function useCancelReservation() {
   const qc = useQueryClient();
   return useMutation(() => ({
     mutationFn: (id: string) =>
-      apiFetch<void>(`/v1/reservations/${id}`, { method: 'DELETE' }),
+      apiFetch<DeleteResponse>(`/v1/reservations/${id}`, { method: 'DELETE' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.reservations.all }),
   }));
 }

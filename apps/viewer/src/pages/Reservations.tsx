@@ -1,6 +1,6 @@
 import { Component, createMemo, createSignal, For, Show } from 'solid-js';
 import { A } from '@solidjs/router';
-import { useReservationsByUserDate, useCancelReservation, useUsers, ApiError } from '@neshiman/api-client';
+import { useReservationsByUserDate, useCancelReservation, ApiError } from '@neshiman/api-client';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -10,9 +10,14 @@ const formatDate = (s: string) => {
 };
 
 const Reservations: Component = () => {
-  const userId = () => localStorage.getItem('viewer_user_id') ?? '';
-  const allUsers = useUsers(() => '');
-  const currentUser = createMemo(() => allUsers.data?.find((u) => u.id === userId()));
+  const userId = () => {
+    try { return JSON.parse(localStorage.getItem('neshiman_user') ?? 'null')?.id ?? ''; }
+    catch { return ''; }
+  };
+  const currentUser = createMemo(() => {
+    try { return JSON.parse(localStorage.getItem('neshiman_user') ?? 'null'); }
+    catch { return null; }
+  });
 
   const [selectedDate, setSelectedDate] = createSignal(today());
   const reservations = useReservationsByUserDate(userId, selectedDate);
@@ -66,7 +71,7 @@ const Reservations: Component = () => {
           <div class="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7 text-gray-300"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
           </div>
-          <p class="text-gray-500">Select a user from the top-right dropdown.</p>
+          <p class="text-gray-500">Please sign in to view reservations.</p>
         </div>
       }>
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm">

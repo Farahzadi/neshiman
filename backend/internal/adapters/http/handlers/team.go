@@ -2,12 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"neshiman/backend/internal/adapters/http/dto"
 	"neshiman/backend/internal/application"
-	"neshiman/backend/internal/domain"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -89,7 +87,7 @@ func (h *TeamHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Summary      Delete a team
 // @Tags         Teams
 // @Param        id   path      string  true  "Team ID"
-// @Success      204  {string}  string
+// @Success      200  {object}  dto.DeleteResponse
 // @Failure      400  {string}  string
 // @Failure      409  {string}  string
 // @Router       /teams/{id} [delete]
@@ -100,12 +98,8 @@ func (h *TeamHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.teamSvc.DeleteTeam(r.Context(), id); err != nil {
-		if errors.Is(err, domain.ErrTeamHasReferences) {
-			http.Error(w, err.Error(), http.StatusConflict)
-			return
-		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	writeJSON(w, http.StatusOK, dto.DeleteResponse{Deleted: true})
 }

@@ -14,38 +14,29 @@ import (
 const createTeam = `-- name: CreateTeam :one
 INSERT INTO teams (name)
 VALUES ($1)
-RETURNING id, name
+RETURNING id, name, deleted_at
 `
 
 func (q *Queries) CreateTeam(ctx context.Context, name string) (Team, error) {
 	row := q.db.QueryRow(ctx, createTeam, name)
 	var i Team
-	err := row.Scan(&i.ID, &i.Name)
+	err := row.Scan(&i.ID, &i.Name, &i.DeletedAt)
 	return i, err
 }
 
-const deleteTeam = `-- name: DeleteTeam :exec
-DELETE FROM teams WHERE id = $1
-`
-
-func (q *Queries) DeleteTeam(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteTeam, id)
-	return err
-}
-
 const getTeamByID = `-- name: GetTeamByID :one
-SELECT id, name FROM teams WHERE id = $1
+SELECT id, name, deleted_at FROM teams WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetTeamByID(ctx context.Context, id uuid.UUID) (Team, error) {
 	row := q.db.QueryRow(ctx, getTeamByID, id)
 	var i Team
-	err := row.Scan(&i.ID, &i.Name)
+	err := row.Scan(&i.ID, &i.Name, &i.DeletedAt)
 	return i, err
 }
 
 const listTeams = `-- name: ListTeams :many
-SELECT id, name FROM teams ORDER BY name
+SELECT id, name, deleted_at FROM teams WHERE deleted_at IS NULL ORDER BY name
 `
 
 func (q *Queries) ListTeams(ctx context.Context) ([]Team, error) {
@@ -57,7 +48,7 @@ func (q *Queries) ListTeams(ctx context.Context) ([]Team, error) {
 	var items []Team
 	for rows.Next() {
 		var i Team
-		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+		if err := rows.Scan(&i.ID, &i.Name, &i.DeletedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -66,4 +57,13 @@ func (q *Queries) ListTeams(ctx context.Context) ([]Team, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const softDeleteTeam = `-- name: SoftDeleteTeam :exec
+UPDATE teams SET deleted_at = now() WHERE id = $1
+`
+
+func (q *Queries) SoftDeleteTeam(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, softDeleteTeam, id)
+	return err
 }

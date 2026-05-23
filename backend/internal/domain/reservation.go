@@ -1,12 +1,17 @@
 package domain
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type Reservation struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
-	SeatID uuid.UUID
-	Date   Date
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	SeatID    uuid.UUID
+	Date      Date
+	DeletedAt *time.Time
 }
 
 func NewReservation(userID, seatID uuid.UUID, date Date) *Reservation {

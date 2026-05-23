@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func main() {
@@ -88,8 +89,8 @@ func seedUsers(ctx context.Context, q *sqlc.Queries, teams map[string]sqlc.Team)
 			teamID = pgtype.UUID{Bytes: teams[s.teamKey].ID, Valid: true}
 		}
 		u, err := q.CreateUser(ctx, sqlc.CreateUserParams{
-			Name:        s.name,
-			Email:       s.email,
+			Name:  s.name,
+			Email: pgtype.Text{String: s.email, Valid: s.email != ""},
 			TeamID:      teamID,
 			Role:        s.role,
 			WeeklyLimit: s.weeklyLimit,
@@ -97,6 +98,18 @@ func seedUsers(ctx context.Context, q *sqlc.Queries, teams map[string]sqlc.Team)
 		if err != nil {
 			log.Fatalf("failed to create user %s: %v", s.name, err)
 		}
+
+		hash, err := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
+		if err != nil {
+			log.Fatalf("failed to hash password for %s: %v", s.name, err)
+		}
+		if err := q.UpdateUserPassword(ctx, sqlc.UpdateUserPasswordParams{
+			ID:           u.ID,
+			PasswordHash: string(hash),
+		}); err != nil {
+			log.Fatalf("failed to set password for %s: %v", s.name, err)
+		}
+
 		result[s.key] = u
 		fmt.Printf("  User: %s (id=%s, team=%q)\n", u.Name, u.ID, s.teamKey)
 	}

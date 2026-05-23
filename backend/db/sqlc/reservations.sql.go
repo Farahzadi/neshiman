@@ -18,6 +18,7 @@ FROM reservations
 WHERE user_id = $1
   AND date >= $2
   AND date <= $3
+  AND deleted_at IS NULL
 `
 
 type CountReservationsByUserInWeekParams struct {
@@ -36,7 +37,7 @@ func (q *Queries) CountReservationsByUserInWeek(ctx context.Context, arg CountRe
 const createReservation = `-- name: CreateReservation :one
 INSERT INTO reservations (user_id, seat_id, date)
 VALUES ($1, $2, $3)
-RETURNING id, user_id, seat_id, date, created_at
+RETURNING id, user_id, seat_id, date, created_at, deleted_at
 `
 
 type CreateReservationParams struct {
@@ -54,21 +55,13 @@ func (q *Queries) CreateReservation(ctx context.Context, arg CreateReservationPa
 		&i.SeatID,
 		&i.Date,
 		&i.CreatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
-const deleteReservation = `-- name: DeleteReservation :exec
-DELETE FROM reservations WHERE id = $1
-`
-
-func (q *Queries) DeleteReservation(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteReservation, id)
-	return err
-}
-
 const getReservationByID = `-- name: GetReservationByID :one
-SELECT id, user_id, seat_id, date, created_at FROM reservations WHERE id = $1
+SELECT id, user_id, seat_id, date, created_at, deleted_at FROM reservations WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetReservationByID(ctx context.Context, id uuid.UUID) (Reservation, error) {
@@ -80,12 +73,13 @@ func (q *Queries) GetReservationByID(ctx context.Context, id uuid.UUID) (Reserva
 		&i.SeatID,
 		&i.Date,
 		&i.CreatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getReservationBySeatAndDate = `-- name: GetReservationBySeatAndDate :one
-SELECT id, user_id, seat_id, date, created_at FROM reservations WHERE seat_id = $1 AND date = $2
+SELECT id, user_id, seat_id, date, created_at, deleted_at FROM reservations WHERE seat_id = $1 AND date = $2 AND deleted_at IS NULL
 `
 
 type GetReservationBySeatAndDateParams struct {
@@ -102,12 +96,13 @@ func (q *Queries) GetReservationBySeatAndDate(ctx context.Context, arg GetReserv
 		&i.SeatID,
 		&i.Date,
 		&i.CreatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listReservationsByDate = `-- name: ListReservationsByDate :many
-SELECT id, user_id, seat_id, date, created_at FROM reservations WHERE date = $1 ORDER BY created_at
+SELECT id, user_id, seat_id, date, created_at, deleted_at FROM reservations WHERE date = $1 AND deleted_at IS NULL ORDER BY created_at
 `
 
 func (q *Queries) ListReservationsByDate(ctx context.Context, date pgtype.Date) ([]Reservation, error) {
@@ -125,6 +120,7 @@ func (q *Queries) ListReservationsByDate(ctx context.Context, date pgtype.Date) 
 			&i.SeatID,
 			&i.Date,
 			&i.CreatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -137,7 +133,7 @@ func (q *Queries) ListReservationsByDate(ctx context.Context, date pgtype.Date) 
 }
 
 const listReservationsByUserAndDate = `-- name: ListReservationsByUserAndDate :many
-SELECT id, user_id, seat_id, date, created_at FROM reservations WHERE user_id = $1 AND date = $2 ORDER BY created_at
+SELECT id, user_id, seat_id, date, created_at, deleted_at FROM reservations WHERE user_id = $1 AND date = $2 AND deleted_at IS NULL ORDER BY created_at
 `
 
 type ListReservationsByUserAndDateParams struct {
@@ -160,6 +156,7 @@ func (q *Queries) ListReservationsByUserAndDate(ctx context.Context, arg ListRes
 			&i.SeatID,
 			&i.Date,
 			&i.CreatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -172,10 +169,11 @@ func (q *Queries) ListReservationsByUserAndDate(ctx context.Context, arg ListRes
 }
 
 const listReservationsByUserAndWeek = `-- name: ListReservationsByUserAndWeek :many
-SELECT id, user_id, seat_id, date, created_at FROM reservations
+SELECT id, user_id, seat_id, date, created_at, deleted_at FROM reservations
 WHERE user_id = $1
   AND date >= $2
   AND date <= $3
+  AND deleted_at IS NULL
 ORDER BY date
 `
 
@@ -200,6 +198,7 @@ func (q *Queries) ListReservationsByUserAndWeek(ctx context.Context, arg ListRes
 			&i.SeatID,
 			&i.Date,
 			&i.CreatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -209,4 +208,13 @@ func (q *Queries) ListReservationsByUserAndWeek(ctx context.Context, arg ListRes
 		return nil, err
 	}
 	return items, nil
+}
+
+const softDeleteReservation = `-- name: SoftDeleteReservation :exec
+UPDATE reservations SET deleted_at = now() WHERE id = $1
+`
+
+func (q *Queries) SoftDeleteReservation(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, softDeleteReservation, id)
+	return err
 }

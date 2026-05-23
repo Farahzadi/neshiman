@@ -14,7 +14,7 @@ import (
 const createRoom = `-- name: CreateRoom :one
 INSERT INTO rooms (name, grid_width, grid_height)
 VALUES ($1, $2, $3)
-RETURNING id, name, grid_width, grid_height, created_at, updated_at
+RETURNING id, name, grid_width, grid_height, created_at, updated_at, deleted_at
 `
 
 type CreateRoomParams struct {
@@ -33,21 +33,13 @@ func (q *Queries) CreateRoom(ctx context.Context, arg CreateRoomParams) (Room, e
 		&i.GridHeight,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
-const deleteRoom = `-- name: DeleteRoom :exec
-DELETE FROM rooms WHERE id = $1
-`
-
-func (q *Queries) DeleteRoom(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteRoom, id)
-	return err
-}
-
 const getRoomByID = `-- name: GetRoomByID :one
-SELECT id, name, grid_width, grid_height, created_at, updated_at FROM rooms WHERE id = $1
+SELECT id, name, grid_width, grid_height, created_at, updated_at, deleted_at FROM rooms WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetRoomByID(ctx context.Context, id uuid.UUID) (Room, error) {
@@ -60,12 +52,13 @@ func (q *Queries) GetRoomByID(ctx context.Context, id uuid.UUID) (Room, error) {
 		&i.GridHeight,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listRooms = `-- name: ListRooms :many
-SELECT id, name, grid_width, grid_height, created_at, updated_at FROM rooms ORDER BY created_at DESC
+SELECT id, name, grid_width, grid_height, created_at, updated_at, deleted_at FROM rooms WHERE deleted_at IS NULL ORDER BY created_at DESC
 `
 
 func (q *Queries) ListRooms(ctx context.Context) ([]Room, error) {
@@ -84,6 +77,7 @@ func (q *Queries) ListRooms(ctx context.Context) ([]Room, error) {
 			&i.GridHeight,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -95,11 +89,20 @@ func (q *Queries) ListRooms(ctx context.Context) ([]Room, error) {
 	return items, nil
 }
 
+const softDeleteRoom = `-- name: SoftDeleteRoom :exec
+UPDATE rooms SET deleted_at = now() WHERE id = $1
+`
+
+func (q *Queries) SoftDeleteRoom(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, softDeleteRoom, id)
+	return err
+}
+
 const updateRoom = `-- name: UpdateRoom :one
 UPDATE rooms
 SET name = $2, grid_width = $3, grid_height = $4, updated_at = now()
-WHERE id = $1
-RETURNING id, name, grid_width, grid_height, created_at, updated_at
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, name, grid_width, grid_height, created_at, updated_at, deleted_at
 `
 
 type UpdateRoomParams struct {
@@ -124,6 +127,7 @@ func (q *Queries) UpdateRoom(ctx context.Context, arg UpdateRoomParams) (Room, e
 		&i.GridHeight,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

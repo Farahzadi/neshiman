@@ -2,14 +2,12 @@ package postgres
 
 import (
 	"context"
-	"errors"
 	"neshiman/backend/db/sqlc"
 	"neshiman/backend/internal/domain"
 	"neshiman/backend/internal/ports"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -64,13 +62,5 @@ func (r *TeamRepository) List(ctx context.Context) ([]domain.Team, error) {
 }
 
 func (r *TeamRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	err := r.q.DeleteTeam(ctx, id)
-	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23503" {
-			return domain.ErrTeamHasReferences
-		}
-		return err
-	}
-	return nil
+	return r.q.SoftDeleteTeam(ctx, id)
 }

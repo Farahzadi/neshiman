@@ -13,5 +13,6 @@ type SeatRepository interface {
 	ListByRoom(ctx context.Context, roomID uuid.UUID) ([]domain.Seat, error)
 	Update(ctx context.Context, seat *domain.Seat) error
 	Delete(ctx context.Context, id uuid.UUID) error
+	DeleteByRoom(ctx context.Context, roomID uuid.UUID) error
 	BulkSync(ctx context.Context, roomID uuid.UUID, seats []domain.Seat) ([]domain.Seat, error)
 }

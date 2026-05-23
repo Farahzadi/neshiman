@@ -100,6 +100,27 @@ definitions:
       target_seat_id:
         type: string
     type: object
+  dto.DeleteResponse:
+    properties:
+      deleted:
+        type: boolean
+      seats_deleted:
+        type: integer
+    type: object
+  dto.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.LoginResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/dto.UserResponse'
+    type: object
   dto.MoveSeatRequest:
     properties:
       pos_x:
@@ -155,6 +176,11 @@ definitions:
       team_id:
         type: string
     type: object
+  dto.SetPasswordRequest:
+    properties:
+      password:
+        type: string
+    type: object
   dto.TeamResponse:
     properties:
       id:
@@ -198,6 +224,35 @@ info:
   title: Neshiman API
   version: "1.0"
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      summary: Login
+      tags:
+      - Auth
   /cross-team-requests:
     get:
       parameters:
@@ -412,10 +467,10 @@ paths:
         required: true
         type: string
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
           schema:
-            type: string
+            $ref: '#/definitions/dto.DeleteResponse'
         "401":
           description: Unauthorized
           schema:
@@ -497,10 +552,10 @@ paths:
         required: true
         type: string
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
           schema:
-            type: string
+            $ref: '#/definitions/dto.DeleteResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -780,10 +835,10 @@ paths:
         required: true
         type: string
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
           schema:
-            type: string
+            $ref: '#/definitions/dto.DeleteResponse'
         "400":
           description: Bad Request
           schema:
@@ -872,10 +927,10 @@ paths:
         required: true
         type: string
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
           schema:
-            type: string
+            $ref: '#/definitions/dto.DeleteResponse'
       summary: Delete a user
       tags:
       - Users
@@ -900,6 +955,38 @@ paths:
       summary: Get a user by ID
       tags:
       - Users
+  /users/{id}/password:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New password
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SetPasswordRequest'
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      summary: Set password
+      tags:
+      - Auth
   /users/{id}/weekly-limit:
     put:
       consumes:

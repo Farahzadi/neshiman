@@ -83,5 +83,5 @@ func (r *RoomRepository) Update(ctx context.Context, room *domain.Room) error {
 }
 
 func (r *RoomRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.q.DeleteRoom(ctx, id)
+	return r.q.SoftDeleteRoom(ctx, id)
 }

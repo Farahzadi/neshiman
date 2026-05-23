@@ -5,6 +5,7 @@ import type { definitions } from '@neshiman/api-types';
 
 type Team = definitions['dto.TeamResponse'];
 type CreateTeam = definitions['dto.CreateTeamRequest'];
+type DeleteResponse = definitions['dto.DeleteResponse'];
 
 export function useTeams() {
   return useQuery(() => ({
@@ -34,7 +35,7 @@ export function useDeleteTeam() {
   const qc = useQueryClient();
   return useMutation(() => ({
     mutationFn: (id: string) =>
-      apiFetch<void>(`/v1/teams/${id}`, { method: 'DELETE' }),
+      apiFetch<DeleteResponse>(`/v1/teams/${id}`, { method: 'DELETE' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.teams.all }),
   }));
 }

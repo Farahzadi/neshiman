@@ -14,7 +14,7 @@ import (
 const createSeat = `-- name: CreateSeat :one
 INSERT INTO seats (room_id, team_id, label, pos_x, pos_y, rotation)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, room_id, team_id, label, pos_x, pos_y, rotation, created_at, updated_at
+RETURNING id, room_id, team_id, label, pos_x, pos_y, rotation, created_at, updated_at, deleted_at
 `
 
 type CreateSeatParams struct {
@@ -46,21 +46,13 @@ func (q *Queries) CreateSeat(ctx context.Context, arg CreateSeatParams) (Seat, e
 		&i.Rotation,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
-const deleteSeat = `-- name: DeleteSeat :exec
-DELETE FROM seats WHERE id = $1
-`
-
-func (q *Queries) DeleteSeat(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteSeat, id)
-	return err
-}
-
 const getSeatByID = `-- name: GetSeatByID :one
-SELECT id, room_id, team_id, label, pos_x, pos_y, rotation, created_at, updated_at FROM seats WHERE id = $1
+SELECT id, room_id, team_id, label, pos_x, pos_y, rotation, created_at, updated_at, deleted_at FROM seats WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetSeatByID(ctx context.Context, id uuid.UUID) (Seat, error) {
@@ -76,12 +68,13 @@ func (q *Queries) GetSeatByID(ctx context.Context, id uuid.UUID) (Seat, error) {
 		&i.Rotation,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listSeatsByRoom = `-- name: ListSeatsByRoom :many
-SELECT id, room_id, team_id, label, pos_x, pos_y, rotation, created_at, updated_at FROM seats WHERE room_id = $1 ORDER BY pos_y, pos_x
+SELECT id, room_id, team_id, label, pos_x, pos_y, rotation, created_at, updated_at, deleted_at FROM seats WHERE room_id = $1 AND deleted_at IS NULL ORDER BY pos_y, pos_x
 `
 
 func (q *Queries) ListSeatsByRoom(ctx context.Context, roomID uuid.UUID) ([]Seat, error) {
@@ -103,6 +96,7 @@ func (q *Queries) ListSeatsByRoom(ctx context.Context, roomID uuid.UUID) ([]Seat
 			&i.Rotation,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -114,11 +108,29 @@ func (q *Queries) ListSeatsByRoom(ctx context.Context, roomID uuid.UUID) ([]Seat
 	return items, nil
 }
 
+const softDeleteSeat = `-- name: SoftDeleteSeat :exec
+UPDATE seats SET deleted_at = now() WHERE id = $1
+`
+
+func (q *Queries) SoftDeleteSeat(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, softDeleteSeat, id)
+	return err
+}
+
+const softDeleteSeatsByRoom = `-- name: SoftDeleteSeatsByRoom :exec
+UPDATE seats SET deleted_at = now() WHERE room_id = $1
+`
+
+func (q *Queries) SoftDeleteSeatsByRoom(ctx context.Context, roomID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, softDeleteSeatsByRoom, roomID)
+	return err
+}
+
 const updateSeat = `-- name: UpdateSeat :one
 UPDATE seats
 SET label = $2, pos_x = $3, pos_y = $4, rotation = $5, updated_at = now()
-WHERE id = $1
-RETURNING id, room_id, team_id, label, pos_x, pos_y, rotation, created_at, updated_at
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, room_id, team_id, label, pos_x, pos_y, rotation, created_at, updated_at, deleted_at
 `
 
 type UpdateSeatParams struct {
@@ -148,6 +160,7 @@ func (q *Queries) UpdateSeat(ctx context.Context, arg UpdateSeatParams) (Seat, e
 		&i.Rotation,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -155,8 +168,8 @@ func (q *Queries) UpdateSeat(ctx context.Context, arg UpdateSeatParams) (Seat, e
 const updateSeatFull = `-- name: UpdateSeatFull :one
 UPDATE seats
 SET label = $2, team_id = $3, pos_x = $4, pos_y = $5, rotation = $6, updated_at = now()
-WHERE id = $1
-RETURNING id, room_id, team_id, label, pos_x, pos_y, rotation, created_at, updated_at
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, room_id, team_id, label, pos_x, pos_y, rotation, created_at, updated_at, deleted_at
 `
 
 type UpdateSeatFullParams struct {
@@ -188,6 +201,7 @@ func (q *Queries) UpdateSeatFull(ctx context.Context, arg UpdateSeatFullParams) 
 		&i.Rotation,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

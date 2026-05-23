@@ -24,8 +24,9 @@ func NewServer(
 	seatSvc *application.SeatService,
 	userSvc *application.UserService,
 	crossTeamRequestSvc *application.CrossTeamRequestService,
+	authSvc *application.AuthService,
 ) *Server {
-	r := newRouter(roomSvc, reservationSvc, teamSvc, seatSvc, userSvc, crossTeamRequestSvc, jwtSecret)
+	r := newRouter(roomSvc, reservationSvc, teamSvc, seatSvc, userSvc, crossTeamRequestSvc, authSvc, jwtSecret)
 
 	return &Server{
 		server: &http.Server{

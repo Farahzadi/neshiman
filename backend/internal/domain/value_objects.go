@@ -29,3 +29,5 @@ type Date struct {
 }
 
 type WeeklyLimit int
+
+const MaxWeeklyLimit WeeklyLimit = 5

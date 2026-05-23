@@ -4,21 +4,28 @@ VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: GetUserByID :one
-SELECT * FROM users WHERE id = $1;
+SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL;
 
 -- name: GetUserByEmail :one
-SELECT * FROM users WHERE email = $1;
+SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL;
+
+-- name: GetUserByName :one
+SELECT * FROM users WHERE name = $1 AND deleted_at IS NULL;
 
 -- name: ListUsersByTeam :many
-SELECT * FROM users WHERE team_id = $1 ORDER BY name;
+SELECT * FROM users WHERE team_id = $1 AND deleted_at IS NULL ORDER BY name;
 
 -- name: ListUsers :many
-SELECT * FROM users ORDER BY name;
+SELECT * FROM users WHERE deleted_at IS NULL ORDER BY name;
 
 -- name: UpdateUserWeeklyLimit :one
 UPDATE users SET weekly_limit = $2, updated_at = now()
-WHERE id = $1
+WHERE id = $1 AND deleted_at IS NULL
 RETURNING *;
 
--- name: DeleteUser :exec
-DELETE FROM users WHERE id = $1;
+-- name: UpdateUserPassword :exec
+UPDATE users SET password_hash = $2, updated_at = now()
+WHERE id = $1 AND deleted_at IS NULL;
+
+-- name: SoftDeleteUser :exec
+UPDATE users SET deleted_at = now() WHERE id = $1;

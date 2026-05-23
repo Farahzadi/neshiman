@@ -15,7 +15,7 @@ import (
 const createCrossTeamRequest = `-- name: CreateCrossTeamRequest :one
 INSERT INTO cross_team_requests (requesting_user_id, target_seat_id, date)
 VALUES ($1, $2, $3)
-RETURNING id, requesting_user_id, target_seat_id, date, status, created_at, updated_at
+RETURNING id, requesting_user_id, target_seat_id, date, status, created_at, updated_at, deleted_at
 `
 
 type CreateCrossTeamRequestParams struct {
@@ -35,12 +35,13 @@ func (q *Queries) CreateCrossTeamRequest(ctx context.Context, arg CreateCrossTea
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getCrossTeamRequestByID = `-- name: GetCrossTeamRequestByID :one
-SELECT id, requesting_user_id, target_seat_id, date, status, created_at, updated_at FROM cross_team_requests WHERE id = $1
+SELECT id, requesting_user_id, target_seat_id, date, status, created_at, updated_at, deleted_at FROM cross_team_requests WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetCrossTeamRequestByID(ctx context.Context, id uuid.UUID) (CrossTeamRequest, error) {
@@ -54,12 +55,13 @@ func (q *Queries) GetCrossTeamRequestByID(ctx context.Context, id uuid.UUID) (Cr
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listCrossTeamRequestsByStatus = `-- name: ListCrossTeamRequestsByStatus :many
-SELECT id, requesting_user_id, target_seat_id, date, status, created_at, updated_at FROM cross_team_requests WHERE status = $1 ORDER BY created_at DESC
+SELECT id, requesting_user_id, target_seat_id, date, status, created_at, updated_at, deleted_at FROM cross_team_requests WHERE status = $1 AND deleted_at IS NULL ORDER BY created_at DESC
 `
 
 func (q *Queries) ListCrossTeamRequestsByStatus(ctx context.Context, status string) ([]CrossTeamRequest, error) {
@@ -79,6 +81,7 @@ func (q *Queries) ListCrossTeamRequestsByStatus(ctx context.Context, status stri
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -91,10 +94,10 @@ func (q *Queries) ListCrossTeamRequestsByStatus(ctx context.Context, status stri
 }
 
 const listPendingRequestsForTeam = `-- name: ListPendingRequestsForTeam :many
-SELECT ctr.id, ctr.requesting_user_id, ctr.target_seat_id, ctr.date, ctr.status, ctr.created_at, ctr.updated_at FROM cross_team_requests ctr
+SELECT ctr.id, ctr.requesting_user_id, ctr.target_seat_id, ctr.date, ctr.status, ctr.created_at, ctr.updated_at, ctr.deleted_at FROM cross_team_requests ctr
 JOIN seats s ON ctr.target_seat_id = s.id
 JOIN teams t ON s.team_id = t.id
-WHERE t.id = $1 AND ctr.status = 'pending'
+WHERE t.id = $1 AND ctr.status = 'pending' AND ctr.deleted_at IS NULL
 ORDER BY ctr.created_at DESC
 `
 
@@ -115,6 +118,7 @@ func (q *Queries) ListPendingRequestsForTeam(ctx context.Context, id uuid.UUID) 
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -129,8 +133,8 @@ func (q *Queries) ListPendingRequestsForTeam(ctx context.Context, id uuid.UUID) 
 const updateCrossTeamRequestStatus = `-- name: UpdateCrossTeamRequestStatus :one
 UPDATE cross_team_requests
 SET status = $2, updated_at = now()
-WHERE id = $1
-RETURNING id, requesting_user_id, target_seat_id, date, status, created_at, updated_at
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, requesting_user_id, target_seat_id, date, status, created_at, updated_at, deleted_at
 `
 
 type UpdateCrossTeamRequestStatusParams struct {
@@ -149,6 +153,7 @@ func (q *Queries) UpdateCrossTeamRequestStatus(ctx context.Context, arg UpdateCr
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

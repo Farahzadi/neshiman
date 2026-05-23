@@ -138,6 +138,9 @@ func TestUserService_DeleteUser(t *testing.T) {
 	id := uuid.New()
 	var deleted uuid.UUID
 	svc := NewUserService(&mockUserRepo{
+		getByIDFn: func(_ context.Context, _ uuid.UUID) (*domain.User, error) {
+			return &domain.User{ID: id, Name: "Alice", Role: domain.RoleViewer}, nil
+		},
 		deleteFn: func(_ context.Context, got uuid.UUID) error {
 			deleted = got
 			return nil
@@ -148,5 +151,18 @@ func TestUserService_DeleteUser(t *testing.T) {
 	}
 	if deleted != id {
 		t.Errorf("got %v, want %v", deleted, id)
+	}
+}
+
+func TestUserService_DeleteSuperAdmin(t *testing.T) {
+	id := uuid.New()
+	svc := NewUserService(&mockUserRepo{
+		getByIDFn: func(_ context.Context, _ uuid.UUID) (*domain.User, error) {
+			return &domain.User{ID: id, Name: "Admin", Role: domain.RoleSuperAdmin}, nil
+		},
+	})
+	err := svc.DeleteUser(context.Background(), id)
+	if err != domain.ErrCannotDeleteSuperAdmin {
+		t.Errorf("got %v, want %v", err, domain.ErrCannotDeleteSuperAdmin)
 	}
 }

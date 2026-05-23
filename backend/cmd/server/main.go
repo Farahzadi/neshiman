@@ -35,15 +35,16 @@ func main() {
 	teamRepo := postgres.NewTeamRepository(pool)
 	txManager := postgres.NewTxManager(pool)
 
-	roomSvc := application.NewRoomService(roomRepo)
+	roomSvc := application.NewRoomService(roomRepo, seatRepo)
 	seatSvc := application.NewSeatService(seatRepo)
 	userSvc := application.NewUserService(userRepo)
 	reservationSvc := application.NewReservationService(reservationRepo, seatRepo, userRepo, txManager)
 	teamSvc := application.NewTeamService(teamRepo)
 	crossTeamRequestRepo := postgres.NewCrossTeamRequestRepository(pool)
 	crossTeamRequestSvc := application.NewCrossTeamRequestService(crossTeamRequestRepo)
+	authSvc := application.NewAuthService(userRepo, cfg.JWTSecret)
 
-	srv := httpadapter.NewServer(cfg.Port, cfg.JWTSecret, roomSvc, reservationSvc, teamSvc, seatSvc, userSvc, crossTeamRequestSvc)
+	srv := httpadapter.NewServer(cfg.Port, cfg.JWTSecret, roomSvc, reservationSvc, teamSvc, seatSvc, userSvc, crossTeamRequestSvc, authSvc)
 	fmt.Printf("server listening on :%s\n", cfg.Port)
 	if err := srv.Start(); err != nil {
 		log.Fatalf("server error: %v", err)

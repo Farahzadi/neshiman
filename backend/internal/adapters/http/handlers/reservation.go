@@ -81,7 +81,7 @@ func (h *ReservationHandler) Create(w http.ResponseWriter, r *http.Request) {
 // @Summary      Cancel a reservation
 // @Tags         Reservations
 // @Param        id   path      string  true  "Reservation ID"
-// @Success      204  {string}  string
+// @Success      200  {object}  dto.DeleteResponse
 // @Failure      401  {string}  string
 // @Failure      403  {string}  string
 // @Failure      404  {string}  string
@@ -107,7 +107,7 @@ func (h *ReservationHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), status)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	writeJSON(w, http.StatusOK, dto.DeleteResponse{Deleted: true})
 }
 
 // GetUserWeekReservations returns a user's reservations for a given week

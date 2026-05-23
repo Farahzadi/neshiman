@@ -24,12 +24,13 @@ func (m *mockRoomRepo) Delete(ctx context.Context, id uuid.UUID) error { return 
 func (m *mockRoomRepo) assertImplementation() { var _ ports.RoomRepository = m }
 
 type mockSeatRepo struct {
-	createFn    func(ctx context.Context, seat *domain.Seat) error
-	getByIDFn   func(ctx context.Context, id uuid.UUID) (*domain.Seat, error)
-	listByRoomFn func(ctx context.Context, roomID uuid.UUID) ([]domain.Seat, error)
-	updateFn    func(ctx context.Context, seat *domain.Seat) error
-	deleteFn    func(ctx context.Context, id uuid.UUID) error
-	bulkSyncFn  func(ctx context.Context, roomID uuid.UUID, seats []domain.Seat) ([]domain.Seat, error)
+	createFn      func(ctx context.Context, seat *domain.Seat) error
+	getByIDFn     func(ctx context.Context, id uuid.UUID) (*domain.Seat, error)
+	listByRoomFn  func(ctx context.Context, roomID uuid.UUID) ([]domain.Seat, error)
+	updateFn      func(ctx context.Context, seat *domain.Seat) error
+	deleteFn      func(ctx context.Context, id uuid.UUID) error
+	deleteByRoomFn func(ctx context.Context, roomID uuid.UUID) error
+	bulkSyncFn    func(ctx context.Context, roomID uuid.UUID, seats []domain.Seat) ([]domain.Seat, error)
 }
 
 func (m *mockSeatRepo) Create(ctx context.Context, seat *domain.Seat) error { return m.createFn(ctx, seat) }
@@ -37,24 +38,30 @@ func (m *mockSeatRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Seat,
 func (m *mockSeatRepo) ListByRoom(ctx context.Context, roomID uuid.UUID) ([]domain.Seat, error) { return m.listByRoomFn(ctx, roomID) }
 func (m *mockSeatRepo) Update(ctx context.Context, seat *domain.Seat) error { return m.updateFn(ctx, seat) }
 func (m *mockSeatRepo) Delete(ctx context.Context, id uuid.UUID) error { return m.deleteFn(ctx, id) }
+func (m *mockSeatRepo) DeleteByRoom(ctx context.Context, roomID uuid.UUID) error { return m.deleteByRoomFn(ctx, roomID) }
 func (m *mockSeatRepo) BulkSync(ctx context.Context, roomID uuid.UUID, seats []domain.Seat) ([]domain.Seat, error) { return m.bulkSyncFn(ctx, roomID, seats) }
+func (m *mockSeatRepo) assertImplementation() { var _ ports.SeatRepository = m }
 
 type mockUserRepo struct {
 	createFn            func(ctx context.Context, user *domain.User) error
 	getByIDFn           func(ctx context.Context, id uuid.UUID) (*domain.User, error)
 	getByEmailFn        func(ctx context.Context, email string) (*domain.User, error)
+	getByNameFn         func(ctx context.Context, name string) (*domain.User, error)
 	listByTeamFn        func(ctx context.Context, teamID uuid.UUID) ([]domain.User, error)
 	listAllFn           func(ctx context.Context) ([]domain.User, error)
 	updateWeeklyLimitFn func(ctx context.Context, id uuid.UUID, limit domain.WeeklyLimit) error
+	updatePasswordFn    func(ctx context.Context, id uuid.UUID, passwordHash string) error
 	deleteFn            func(ctx context.Context, id uuid.UUID) error
 }
 
 func (m *mockUserRepo) Create(ctx context.Context, user *domain.User) error { return m.createFn(ctx, user) }
 func (m *mockUserRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error) { return m.getByIDFn(ctx, id) }
 func (m *mockUserRepo) GetByEmail(ctx context.Context, email string) (*domain.User, error) { return m.getByEmailFn(ctx, email) }
+func (m *mockUserRepo) GetByName(ctx context.Context, name string) (*domain.User, error) { return m.getByNameFn(ctx, name) }
 func (m *mockUserRepo) ListByTeam(ctx context.Context, teamID uuid.UUID) ([]domain.User, error) { return m.listByTeamFn(ctx, teamID) }
 func (m *mockUserRepo) ListAll(ctx context.Context) ([]domain.User, error) { return m.listAllFn(ctx) }
 func (m *mockUserRepo) UpdateWeeklyLimit(ctx context.Context, id uuid.UUID, limit domain.WeeklyLimit) error { return m.updateWeeklyLimitFn(ctx, id, limit) }
+func (m *mockUserRepo) UpdatePassword(ctx context.Context, id uuid.UUID, passwordHash string) error { return m.updatePasswordFn(ctx, id, passwordHash) }
 func (m *mockUserRepo) Delete(ctx context.Context, id uuid.UUID) error { return m.deleteFn(ctx, id) }
 
 type mockReservationRepo struct {

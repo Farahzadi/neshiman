@@ -1,12 +1,17 @@
 package domain
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type Room struct {
 	ID         uuid.UUID
 	Name       string
 	GridWidth  int
 	GridHeight int
+	DeletedAt  *time.Time
 }
 
 func NewRoom(name string, gridWidth, gridHeight int) (*Room, error) {

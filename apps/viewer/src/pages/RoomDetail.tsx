@@ -67,7 +67,10 @@ const RoomDetail: Component = () => {
   const cancelReservation = useCancelReservation();
   const createCrossTeamRequest = useCreateCrossTeamRequest();
 
-  const currentUserId = () => localStorage.getItem('viewer_user_id') ?? '';
+  const currentUserId = () => {
+    try { return JSON.parse(localStorage.getItem('neshiman_user') ?? 'null')?.id ?? ''; }
+    catch { return ''; }
+  };
   const currentUser = createMemo(() => allUsers.data?.find((u) => u.id === currentUserId()));
 
   const teamColorMap = createMemo(() => {
@@ -181,7 +184,7 @@ const RoomDetail: Component = () => {
 
       <Show when={!currentUserId()}>
         <div class="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
-          Select a user from the top-right to start reserving seats.
+          Please sign in to reserve seats.
         </div>
       </Show>
 

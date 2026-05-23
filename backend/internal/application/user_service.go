@@ -17,6 +17,9 @@ func NewUserService(users ports.UserRepository) *UserService {
 }
 
 func (s *UserService) CreateUser(ctx context.Context, name, email string, teamID *uuid.UUID, role domain.Role, weeklyLimit domain.WeeklyLimit) (*domain.User, error) {
+	if weeklyLimit > domain.MaxWeeklyLimit {
+		return nil, domain.ErrWeeklyLimitTooHigh
+	}
 	user := domain.NewUser(name, email, teamID, role, weeklyLimit)
 	if err := s.users.Create(ctx, user); err != nil {
 		return nil, err
@@ -41,9 +44,19 @@ func (s *UserService) ListAllUsers(ctx context.Context) ([]domain.User, error) {
 }
 
 func (s *UserService) UpdateWeeklyLimit(ctx context.Context, userID uuid.UUID, limit domain.WeeklyLimit) error {
+	if limit > domain.MaxWeeklyLimit {
+		return domain.ErrWeeklyLimitTooHigh
+	}
 	return s.users.UpdateWeeklyLimit(ctx, userID, limit)
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	user, err := s.users.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if user.IsSuperAdmin() {
+		return domain.ErrCannotDeleteSuperAdmin
+	}
 	return s.users.Delete(ctx, id)
 }

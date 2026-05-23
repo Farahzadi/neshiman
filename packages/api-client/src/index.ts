@@ -6,3 +6,4 @@ export * from './teams';
 export * from './users';
 export * from './reservations';
 export * from './cross-team-requests';
+export * from './auth';

@@ -2,8 +2,6 @@ import { Component, createMemo, createSignal, For, Show } from 'solid-js';
 import {
   useCrossTeamRequests,
   useSeat,
-  useUsers,
-  ApiError,
 } from '@neshiman/api-client';
 
 const statusTabs = [
@@ -13,13 +11,14 @@ const statusTabs = [
 ] as const;
 
 const CrossTeamRequests: Component = () => {
-  const userId = () => localStorage.getItem('viewer_user_id') ?? '';
-  const allUsers = useUsers(() => '');
+  const currentUser = createMemo(() => {
+    try { return JSON.parse(localStorage.getItem('neshiman_user') ?? 'null'); }
+    catch { return null; }
+  });
+  const userId = () => currentUser()?.id ?? '';
 
   const [statusFilter, setStatusFilter] = createSignal('pending');
   const requests = useCrossTeamRequests(statusFilter);
-
-  const currentUser = createMemo(() => allUsers.data?.find((u) => u.id === userId()));
 
   return (
     <div>
@@ -37,7 +36,7 @@ const CrossTeamRequests: Component = () => {
           <div class="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7 text-gray-300"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
           </div>
-          <p class="text-gray-500">Select a user from the top-right dropdown.</p>
+          <p class="text-gray-500">Please sign in to view requests.</p>
         </div>
       }>
         <div class="flex gap-2 mb-4">

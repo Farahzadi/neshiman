@@ -37,7 +37,7 @@ type MoveSeatRequest struct {
 
 type CreateUserRequest struct {
 	Name        string  `json:"name"`
-	Email       string  `json:"email"`
+	Email       *string `json:"email"`
 	TeamID      *string `json:"team_id"`
 	Role        string  `json:"role"`
 	WeeklyLimit int     `json:"weekly_limit"`
@@ -67,4 +67,13 @@ type BulkSeatItem struct {
 
 type BulkSyncSeatsRequest struct {
 	Seats []BulkSeatItem `json:"seats"`
+}
+
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type SetPasswordRequest struct {
+	Password string `json:"password"`
 }

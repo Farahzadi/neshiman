@@ -102,11 +102,13 @@ Build the seat reservation UI.
 
 Replace stub auth with real JWT-based authentication.
 
-- [ ] **JWT token generation** — Login endpoint, token signing
-- [ ] **Auth middleware** — Validate JWT, extract user identity
-- [ ] **Role middleware** — Enforce superadmin / team admin / viewer permissions
-- [ ] **Frontend auth** — Login page, token storage, attach to API requests
-- [ ] **Route guards** — Protect admin routes, redirect unauthenticated users
+- [x] **JWT token generation** — Login endpoint (`POST /auth/login`) returns signed JWT (HS256, 24h expiry) with `sub` (user ID) and `role` claims
+- [x] **Auth middleware** — Validate JWT, extract user ID and role into request context
+- [x] **Role middleware** — Hierarchy-based enforcement (superadmin > team_admin > viewer), wired to protect sensitive routes (user create/delete requires team_admin+)
+- [x] **Password support** — New migration adds `password_hash` column, bcrypt hashing for seed users (default: "password"), `POST /users/{id}/password` endpoint
+- [x] **Frontend auth** — Login pages for both admin and viewer apps, JWT stored in localStorage, `setAuthHeader()` sends Bearer token on all requests
+- [x] **Route guards** — Protected route wrappers redirect to `/login` when unauthenticated, admin app checks for superadmin/team_admin role
+- [x] **Dependencies** — `github.com/golang-jwt/jwt/v5` for JWT, `golang.org/x/crypto` (already indirect) for bcrypt
 
 ## Phase 7 — Polish & Deployment
 

@@ -10,10 +10,11 @@ import (
 
 type RoomService struct {
 	rooms ports.RoomRepository
+	seats ports.SeatRepository
 }
 
-func NewRoomService(rooms ports.RoomRepository) *RoomService {
-	return &RoomService{rooms: rooms}
+func NewRoomService(rooms ports.RoomRepository, seats ports.SeatRepository) *RoomService {
+	return &RoomService{rooms: rooms, seats: seats}
 }
 
 func (s *RoomService) CreateRoom(ctx context.Context, name string, gridWidth, gridHeight int) (*domain.Room, error) {
@@ -49,6 +50,16 @@ func (s *RoomService) UpdateRoom(ctx context.Context, id uuid.UUID, name string,
 	return room, nil
 }
 
-func (s *RoomService) DeleteRoom(ctx context.Context, id uuid.UUID) error {
-	return s.rooms.Delete(ctx, id)
+func (s *RoomService) DeleteRoom(ctx context.Context, id uuid.UUID) (int, error) {
+	seats, err := s.seats.ListByRoom(ctx, id)
+	if err != nil {
+		return 0, err
+	}
+	if err := s.seats.DeleteByRoom(ctx, id); err != nil {
+		return 0, err
+	}
+	if err := s.rooms.Delete(ctx, id); err != nil {
+		return 0, err
+	}
+	return len(seats), nil
 }

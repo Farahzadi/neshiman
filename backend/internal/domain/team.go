@@ -1,10 +1,15 @@
 package domain
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type Team struct {
-	ID   uuid.UUID
-	Name string
+	ID        uuid.UUID
+	Name      string
+	DeletedAt *time.Time
 }
 
 func NewTeam(name string) *Team {

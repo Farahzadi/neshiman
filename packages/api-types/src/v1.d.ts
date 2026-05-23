@@ -4,6 +4,30 @@
  */
 
 export interface paths {
+  "/auth/login": {
+    post: {
+      parameters: {
+        body: {
+          /** Credentials */
+          request: definitions["dto.LoginRequest"];
+        };
+      };
+      responses: {
+        /** OK */
+        200: {
+          schema: definitions["dto.LoginResponse"];
+        };
+        /** Bad Request */
+        400: {
+          schema: string;
+        };
+        /** Unauthorized */
+        401: {
+          schema: string;
+        };
+      };
+    };
+  };
   "/cross-team-requests": {
     get: {
       parameters: {
@@ -203,9 +227,9 @@ export interface paths {
         };
       };
       responses: {
-        /** No Content */
-        204: {
-          schema: string;
+        /** OK */
+        200: {
+          schema: definitions["dto.DeleteResponse"];
         };
         /** Unauthorized */
         401: {
@@ -299,9 +323,9 @@ export interface paths {
         };
       };
       responses: {
-        /** No Content */
-        204: {
-          schema: string;
+        /** OK */
+        200: {
+          schema: definitions["dto.DeleteResponse"];
         };
         /** Internal Server Error */
         500: {
@@ -509,9 +533,9 @@ export interface paths {
         };
       };
       responses: {
-        /** No Content */
-        204: {
-          schema: string;
+        /** OK */
+        200: {
+          schema: definitions["dto.DeleteResponse"];
         };
         /** Bad Request */
         400: {
@@ -609,8 +633,36 @@ export interface paths {
         };
       };
       responses: {
+        /** OK */
+        200: {
+          schema: definitions["dto.DeleteResponse"];
+        };
+      };
+    };
+  };
+  "/users/{id}/password": {
+    put: {
+      parameters: {
+        path: {
+          /** User ID */
+          id: string;
+        };
+        body: {
+          /** New password */
+          request: definitions["dto.SetPasswordRequest"];
+        };
+      };
+      responses: {
         /** No Content */
         204: {
+          schema: string;
+        };
+        /** Bad Request */
+        400: {
+          schema: string;
+        };
+        /** Unauthorized */
+        401: {
           schema: string;
         };
       };
@@ -697,6 +749,18 @@ export interface definitions {
     status?: string;
     target_seat_id?: string;
   };
+  "dto.DeleteResponse": {
+    deleted?: boolean;
+    seats_deleted?: number;
+  };
+  "dto.LoginRequest": {
+    password?: string;
+    username?: string;
+  };
+  "dto.LoginResponse": {
+    token?: string;
+    user?: definitions["dto.UserResponse"];
+  };
   "dto.MoveSeatRequest": {
     pos_x?: number;
     pos_y?: number;
@@ -726,6 +790,9 @@ export interface definitions {
     room_id?: string;
     rotation?: number;
     team_id?: string;
+  };
+  "dto.SetPasswordRequest": {
+    password?: string;
   };
   "dto.TeamResponse": {
     id?: string;

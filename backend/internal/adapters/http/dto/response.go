@@ -128,3 +128,13 @@ func SeatListToResponse(seats []domain.Seat) []SeatResponse {
 func formatDate(d domain.Date) string {
 	return time.Date(d.Year, time.Month(d.Month), d.Day, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
 }
+
+type LoginResponse struct {
+	Token string       `json:"token"`
+	User  UserResponse `json:"user"`
+}
+
+type DeleteResponse struct {
+	Deleted      bool  `json:"deleted"`
+	SeatsDeleted *int  `json:"seats_deleted,omitempty"`
+}

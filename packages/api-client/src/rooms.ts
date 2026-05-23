@@ -6,6 +6,7 @@ import type { definitions } from '@neshiman/api-types';
 type Room = definitions['dto.RoomResponse'];
 type CreateRoom = definitions['dto.CreateRoomRequest'];
 type UpdateRoom = definitions['dto.UpdateRoomRequest'];
+type DeleteResponse = definitions['dto.DeleteResponse'];
 
 export function useRooms() {
   return useQuery(() => ({
@@ -47,7 +48,7 @@ export function useDeleteRoom() {
   const qc = useQueryClient();
   return useMutation(() => ({
     mutationFn: (id: string) =>
-      apiFetch<void>(`/v1/rooms/${id}`, { method: 'DELETE' }),
+      apiFetch<DeleteResponse>(`/v1/rooms/${id}`, { method: 'DELETE' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.rooms.all }),
   }));
 }

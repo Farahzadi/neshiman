@@ -1,14 +1,19 @@
 package domain
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type Seat struct {
-	ID       uuid.UUID
-	RoomID   uuid.UUID
-	TeamID   uuid.UUID
-	Label    string
-	Position Position
-	Rotation Rotation
+	ID        uuid.UUID
+	RoomID    uuid.UUID
+	TeamID    uuid.UUID
+	Label     string
+	Position  Position
+	Rotation  Rotation
+	DeletedAt *time.Time
 }
 
 func NewSeat(roomID, teamID uuid.UUID, label string, pos Position, rotation Rotation) (*Seat, error) {
