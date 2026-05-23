@@ -5,6 +5,7 @@ WORKDIR /app
 # Copy workspace config for dependency install
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/api-types/ packages/api-types/
+COPY packages/api-client/ packages/api-client/
 COPY packages/tsconfig/ packages/tsconfig/
 COPY packages/tailwind-config/ packages/tailwind-config/
 COPY apps/admin/ apps/admin/
