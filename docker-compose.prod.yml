@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: neshiman
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ghcr.io/${REPO_OWNER:-neshiman}/neshiman-backend:latest
+    environment:
+      DB_URL: postgres://postgres:${DB_PASSWORD:?DB_PASSWORD is required}@postgres:5432/neshiman?sslmode=disable
+      PORT: "8080"
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend-admin:
+    image: ghcr.io/${REPO_OWNER:-neshiman}/neshiman-admin:latest
+    ports:
+      - "${ADMIN_PORT:-3000}:80"
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  frontend-viewer:
+    image: ghcr.io/${REPO_OWNER:-neshiman}/neshiman-viewer:latest
+    ports:
+      - "${VIEWER_PORT:-3001}:80"
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

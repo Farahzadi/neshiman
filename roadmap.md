@@ -110,10 +110,27 @@ Replace stub auth with real JWT-based authentication.
 - [x] **Route guards** — Protected route wrappers redirect to `/login` when unauthenticated, admin app checks for superadmin/team_admin role
 - [x] **Dependencies** — `github.com/golang-jwt/jwt/v5` for JWT, `golang.org/x/crypto` (already indirect) for bcrypt
 
-## Phase 7 — Polish & Deployment
+## Phase 7 — Soft Delete & Polish
 
-- [ ] **Frontend tests** — Component tests with Vitest
-- [ ] **Lint + format pass** — Both frontend apps, ESLint + Prettier
-- [ ] **Docker production build** — Verify multi-stage builds, docker-compose production profile
-- [ ] **README update** — Setup instructions, architecture overview
-- [ ] **CI pipeline** — GitHub Actions (lint, test, build)
+- [x] **Soft delete migration** — `000008_add_deleted_at` adds `deleted_at TIMESTAMPTZ` to all 6 tables
+- [x] **Soft delete queries** — All SELECTs filter `deleted_at IS NULL`, DELETEs become `UPDATE ... SET deleted_at = now()`
+- [x] **Domain entities** — `DeletedAt *time.Time` on all 6 entities
+- [x] **Cascade soft delete** — Room deletion cascades to seats, returns seat count (`seats_deleted`)
+- [x] **HTTP responses** — DELETE handlers return `200 { "deleted": true, "seats_deleted": N }` instead of 204
+- [x] **`ConfirmModal` component** — Replaces native `confirm()` dialogs in admin UI with styled modal
+- [x] **Toast notification system** — Replaces `alert()` calls with `showToast()` (success/error/info, auto-dismiss)
+- [x] **Login by username** — Migration `000009_make_email_optional` drops email NOT NULL, adds UNIQUE on name; `POST /auth/login` accepts `{"username", "password"}`
+- [x] **Superadmin deletion protection** — `UserService.DeleteUser` returns `ErrCannotDeleteSuperAdmin`; delete button hidden in UI
+- [x] **Weekly limit cap** — `MaxWeeklyLimit = 5` enforced in service layer; form inputs capped at `max="5"`
+- [x] **Docker production build** — Multi-stage Dockerfiles for backend (Go), admin (pnpm → nginx), viewer (pnpm → nginx)
+- [x] **CI pipeline** — GitHub Actions (`docker.yml`) builds & pushes all 3 images to `ghcr.io` on push to main
+
+## Phase 8 — Deployment
+
+- [x] **Health check endpoint** — `GET /health` returns `{"status":"ok"}` (unauthenticated)
+- [x] **Auto-run migrations** — Backend runs `golang-migrate` on startup via `file://db/migrations`
+- [x] **Production CORS** — `CORS_ORIGINS` env var with origin-validating middleware (falls back to `*` in dev)
+- [x] **Production docker-compose** — `docker-compose.prod.yml` uses pre-built ghcr.io images, requires `DB_PASSWORD`, `JWT_SECRET`, `CORS_ORIGINS`
+- [x] **CI pipeline** — `.github/workflows/ci.yml` runs backend tests (with Postgres service), frontend typecheck/lint/build, then Docker push on main
+- [x] **README** — Architecture diagram, quick start, monorepo layout, deployment guide, API reference
+- [x] **`.env.example`** — Template for required production env vars

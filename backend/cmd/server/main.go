@@ -10,6 +10,10 @@ import (
 	httpadapter "neshiman/backend/internal/adapters/http"
 	"neshiman/backend/internal/adapters/postgres"
 	"neshiman/backend/internal/application"
+
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 // @title           Neshiman API
@@ -28,6 +32,21 @@ func main() {
 	}
 	defer pool.Close()
 
+	m, err := migrate.New("file://db/migrations", cfg.DBURL)
+	if err != nil {
+		log.Fatalf("failed to create migrator: %v", err)
+	}
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatalf("migration failed: %v", err)
+	}
+	srcErr, dbErr := m.Close()
+	if srcErr != nil {
+		log.Printf("warning: migrator source close: %v", srcErr)
+	}
+	if dbErr != nil {
+		log.Printf("warning: migrator database close: %v", dbErr)
+	}
+
 	roomRepo := postgres.NewRoomRepository(pool)
 	seatRepo := postgres.NewSeatRepository(pool)
 	userRepo := postgres.NewUserRepository(pool)
@@ -44,7 +63,7 @@ func main() {
 	crossTeamRequestSvc := application.NewCrossTeamRequestService(crossTeamRequestRepo)
 	authSvc := application.NewAuthService(userRepo, cfg.JWTSecret)
 
-	srv := httpadapter.NewServer(cfg.Port, cfg.JWTSecret, roomSvc, reservationSvc, teamSvc, seatSvc, userSvc, crossTeamRequestSvc, authSvc)
+	srv := httpadapter.NewServer(cfg.Port, cfg.JWTSecret, cfg.CORSOrigins, roomSvc, reservationSvc, teamSvc, seatSvc, userSvc, crossTeamRequestSvc, authSvc)
 	fmt.Printf("server listening on :%s\n", cfg.Port)
 	if err := srv.Start(); err != nil {
 		log.Fatalf("server error: %v", err)

@@ -18,11 +18,14 @@ func newRouter(
 	crossTeamRequestSvc *application.CrossTeamRequestService,
 	authSvc *application.AuthService,
 	jwtSecret string,
+	corsOrigins string,
 ) *chi.Mux {
 	r := chi.NewRouter()
 
-	r.Use(middleware.CORS)
+	r.Use(middleware.CORS(corsOrigins))
 	r.Use(middleware.RequestID)
+
+	r.Get("/health", handlers.Health)
 
 	r.Get("/swagger/*", httpSwagger.Handler())
 

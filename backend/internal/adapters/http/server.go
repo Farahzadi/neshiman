@@ -18,6 +18,7 @@ type Server struct {
 func NewServer(
 	addr string,
 	jwtSecret string,
+	corsOrigins string,
 	roomSvc *application.RoomService,
 	reservationSvc *application.ReservationService,
 	teamSvc *application.TeamService,
@@ -26,7 +27,7 @@ func NewServer(
 	crossTeamRequestSvc *application.CrossTeamRequestService,
 	authSvc *application.AuthService,
 ) *Server {
-	r := newRouter(roomSvc, reservationSvc, teamSvc, seatSvc, userSvc, crossTeamRequestSvc, authSvc, jwtSecret)
+	r := newRouter(roomSvc, reservationSvc, teamSvc, seatSvc, userSvc, crossTeamRequestSvc, authSvc, jwtSecret, corsOrigins)
 
 	return &Server{
 		server: &http.Server{

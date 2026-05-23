@@ -1,7 +1,7 @@
 DB_URL ?= postgres://postgres:postgres@localhost:5432/neshiman?sslmode=disable
 TEST_DB_URL ?= postgres://postgres:postgres@localhost:5432/neshiman_test?sslmode=disable
 
-.PHONY: setup deps db-up db-wait db-migrate db-codegen swagger-gen types-gen dev build test lint clean seed test-db db-test
+.PHONY: setup deps db-up db-wait db-migrate db-codegen swagger-gen types-gen dev build test lint clean seed test-db db-test deploy-prod deploy-prod-down deploy-prod-logs
 
 check-docker:
 	$(call check_tool,docker)
@@ -101,6 +101,16 @@ test: check-go db-test-setup
 lint: check-go
 	cd backend && go vet ./...
 	pnpm turbo lint
+
+deploy-prod:
+	@echo "Starting production stack..."
+	docker compose -f docker-compose.prod.yml up -d
+
+deploy-prod-down:
+	docker compose -f docker-compose.prod.yml down
+
+deploy-prod-logs:
+	docker compose -f docker-compose.prod.yml logs -f
 
 clean:
 	rm -f backend/server
