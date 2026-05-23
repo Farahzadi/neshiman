@@ -106,6 +106,71 @@ func (q *Queries) GetReservationBySeatAndDate(ctx context.Context, arg GetReserv
 	return i, err
 }
 
+const listReservationsByDate = `-- name: ListReservationsByDate :many
+SELECT id, user_id, seat_id, date, created_at FROM reservations WHERE date = $1 ORDER BY created_at
+`
+
+func (q *Queries) ListReservationsByDate(ctx context.Context, date pgtype.Date) ([]Reservation, error) {
+	rows, err := q.db.Query(ctx, listReservationsByDate, date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Reservation
+	for rows.Next() {
+		var i Reservation
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.SeatID,
+			&i.Date,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listReservationsByUserAndDate = `-- name: ListReservationsByUserAndDate :many
+SELECT id, user_id, seat_id, date, created_at FROM reservations WHERE user_id = $1 AND date = $2 ORDER BY created_at
+`
+
+type ListReservationsByUserAndDateParams struct {
+	UserID uuid.UUID   `db:"user_id" json:"user_id"`
+	Date   pgtype.Date `db:"date" json:"date"`
+}
+
+func (q *Queries) ListReservationsByUserAndDate(ctx context.Context, arg ListReservationsByUserAndDateParams) ([]Reservation, error) {
+	rows, err := q.db.Query(ctx, listReservationsByUserAndDate, arg.UserID, arg.Date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Reservation
+	for rows.Next() {
+		var i Reservation
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.SeatID,
+			&i.Date,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listReservationsByUserAndWeek = `-- name: ListReservationsByUserAndWeek :many
 SELECT id, user_id, seat_id, date, created_at FROM reservations
 WHERE user_id = $1

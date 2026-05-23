@@ -30,3 +30,12 @@ export function useCreateReservation() {
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.reservations.all }),
   }));
 }
+
+export function useCancelReservation() {
+  const qc = useQueryClient();
+  return useMutation(() => ({
+    mutationFn: (id: string) =>
+      apiFetch<void>(`/v1/reservations/${id}`, { method: 'DELETE' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.reservations.all }),
+  }));
+}

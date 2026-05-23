@@ -110,5 +110,5 @@ Run from repo root (or via `pnpm --filter <package>`):
 - **Phase 3.5 complete**: `packages/api-client/` with TanStack Query hooks for all 21 endpoints, typed fetch wrapper with `setAuthHeader()`, query key factory, `QueryClientProvider` + `SolidQueryDevtools` wired into both apps
 - **Phase 4 complete**: Full admin UI with sidebar layout, Rooms CRUD, Teams with inline user management, Users page with team filter and weekly limit editing, Cross-Team Requests approval queue
 - **Phase 4.5 complete**: Room Visual Editor — canvas-based pan/zoom room editor with click-to-place and drag-to-move seats, sparse grid support (only placed seats rendered), Select/Place modes, properties panel (label/team/rotation), dirty state tracking, bulk save. Backend `PUT /rooms/{id}/seats` endpoint with atomic transaction. 8 new tests (144 total). Old `Seats.tsx` replaced, route changed to `/rooms/:id/edit`.
-- Viewer app: SolidJS scaffold with placeholders, ready for Phase 5
-- Next steps: see `roadmap.md`
+- **Phase 5 complete**: Viewer app — Dashboard with onboarding/overview, Rooms card grid, RoomDetail with visual seat map and reservation flow, Reservations single-day list with cancel, Cross-Team Requests tab-filtered list. Auth bypass: localStorage user ID sent as Bearer token, backend middleware treats it as identity. Backend fix: added `GET /reservations` with `date`/`user_id` query params. 63 application tests passing.
+- Next steps: Phase 6 — JWT authentication

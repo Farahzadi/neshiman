@@ -104,3 +104,11 @@ func (s *ReservationService) GetUserWeekReservations(ctx context.Context, userID
 	start, end := weekBounds(date)
 	return s.reservations.ListByUserAndWeek(ctx, userID, start, end)
 }
+
+func (s *ReservationService) ListByDate(ctx context.Context, date domain.Date) ([]domain.Reservation, error) {
+	return s.reservations.ListByDate(ctx, date)
+}
+
+func (s *ReservationService) ListByUserAndDate(ctx context.Context, userID uuid.UUID, date domain.Date) ([]domain.Reservation, error) {
+	return s.reservations.ListByUserAndDate(ctx, userID, date)
+}

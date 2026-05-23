@@ -58,17 +58,21 @@ func (m *mockUserRepo) UpdateWeeklyLimit(ctx context.Context, id uuid.UUID, limi
 func (m *mockUserRepo) Delete(ctx context.Context, id uuid.UUID) error { return m.deleteFn(ctx, id) }
 
 type mockReservationRepo struct {
-	createFn         func(ctx context.Context, r *domain.Reservation) error
-	getByIDFn        func(ctx context.Context, id uuid.UUID) (*domain.Reservation, error)
-	getBySeatAndDateFn func(ctx context.Context, seatID uuid.UUID, date domain.Date) (*domain.Reservation, error)
+	createFn           func(ctx context.Context, r *domain.Reservation) error
+	getByIDFn          func(ctx context.Context, id uuid.UUID) (*domain.Reservation, error)
+	getBySeatAndDateFn   func(ctx context.Context, seatID uuid.UUID, date domain.Date) (*domain.Reservation, error)
+	listByDateFn       func(ctx context.Context, date domain.Date) ([]domain.Reservation, error)
+	listByUserAndDateFn func(ctx context.Context, userID uuid.UUID, date domain.Date) ([]domain.Reservation, error)
 	listByUserAndWeekFn func(ctx context.Context, userID uuid.UUID, start, end domain.Date) ([]domain.Reservation, error)
 	countByUserInWeekFn func(ctx context.Context, userID uuid.UUID, start, end domain.Date) (int, error)
-	deleteFn         func(ctx context.Context, id uuid.UUID) error
+	deleteFn           func(ctx context.Context, id uuid.UUID) error
 }
 
 func (m *mockReservationRepo) Create(ctx context.Context, r *domain.Reservation) error { return m.createFn(ctx, r) }
 func (m *mockReservationRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Reservation, error) { return m.getByIDFn(ctx, id) }
 func (m *mockReservationRepo) GetBySeatAndDate(ctx context.Context, seatID uuid.UUID, date domain.Date) (*domain.Reservation, error) { return m.getBySeatAndDateFn(ctx, seatID, date) }
+func (m *mockReservationRepo) ListByDate(ctx context.Context, date domain.Date) ([]domain.Reservation, error) { return m.listByDateFn(ctx, date) }
+func (m *mockReservationRepo) ListByUserAndDate(ctx context.Context, userID uuid.UUID, date domain.Date) ([]domain.Reservation, error) { return m.listByUserAndDateFn(ctx, userID, date) }
 func (m *mockReservationRepo) ListByUserAndWeek(ctx context.Context, userID uuid.UUID, start, end domain.Date) ([]domain.Reservation, error) { return m.listByUserAndWeekFn(ctx, userID, start, end) }
 func (m *mockReservationRepo) CountByUserInWeek(ctx context.Context, userID uuid.UUID, start, end domain.Date) (int, error) { return m.countByUserInWeekFn(ctx, userID, start, end) }
 func (m *mockReservationRepo) Delete(ctx context.Context, id uuid.UUID) error { return m.deleteFn(ctx, id) }

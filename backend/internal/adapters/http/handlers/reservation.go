@@ -140,6 +140,54 @@ func (h *ReservationHandler) GetWeek(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, responses)
 }
 
+// ListReservations returns reservations, optionally filtered by user_id and date
+// @Summary      List reservations
+// @Tags         Reservations
+// @Produce      json
+// @Param        user_id  query     string  false  "Filter by user ID"
+// @Param        date     query     string  false  "Date in YYYY-MM-DD format (defaults to today)"
+// @Success      200      {array}   dto.ReservationResponse
+// @Router       /reservations [get]
+func (h *ReservationHandler) List(w http.ResponseWriter, r *http.Request) {
+	dateStr := r.URL.Query().Get("date")
+	date, err := parseDate(dateStr)
+	if err != nil {
+		http.Error(w, "invalid date, use YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	userIDStr := r.URL.Query().Get("user_id")
+	if userIDStr != "" {
+		userID, err := uuid.Parse(userIDStr)
+		if err != nil {
+			http.Error(w, "invalid user_id", http.StatusBadRequest)
+			return
+		}
+		reservations, err := h.reservationSvc.ListByUserAndDate(r.Context(), userID, date)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		responses := make([]dto.ReservationResponse, len(reservations))
+		for i, r := range reservations {
+			responses[i] = dto.ReservationToResponse(&r)
+		}
+		writeJSON(w, http.StatusOK, responses)
+		return
+	}
+
+	reservations, err := h.reservationSvc.ListByDate(r.Context(), date)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	responses := make([]dto.ReservationResponse, len(reservations))
+	for i, r := range reservations {
+		responses[i] = dto.ReservationToResponse(&r)
+	}
+	writeJSON(w, http.StatusOK, responses)
+}
+
 func parseDate(s string) (domain.Date, error) {
 	if s == "" {
 		t := time.Now()

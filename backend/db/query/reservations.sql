@@ -9,6 +9,12 @@ SELECT * FROM reservations WHERE id = $1;
 -- name: GetReservationBySeatAndDate :one
 SELECT * FROM reservations WHERE seat_id = $1 AND date = $2;
 
+-- name: ListReservationsByDate :many
+SELECT * FROM reservations WHERE date = $1 ORDER BY created_at;
+
+-- name: ListReservationsByUserAndDate :many
+SELECT * FROM reservations WHERE user_id = $1 AND date = $2 ORDER BY created_at;
+
 -- name: ListReservationsByUserAndWeek :many
 SELECT * FROM reservations
 WHERE user_id = $1

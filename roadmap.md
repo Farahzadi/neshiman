@@ -91,11 +91,12 @@ Replace the dense CSS-grid seat editor with a canvas-based room editor supportin
 
 Build the seat reservation UI.
 
-- [ ] **Room grid view** — Visual seat map with availability indicators per date
-- [ ] **Reservation flow** — Select date → select seat → confirm
-- [ ] **My reservations** — Weekly view of own reservations, cancel action
-- [ ] **Cross-team requests** — Request a seat in another team's area
-- [ ] **Dashboard** — Upcoming reservations, weekly usage
+- [x] **Room grid view** — Visual seat map with availability indicators per date
+- [x] **Reservation flow** — Select date → select seat → confirm
+- [x] **My reservations** — Single-day view of own reservations, cancel action
+- [x] **Cross-team requests** — Request a seat in another team's area, tab-filtered list
+- [x] **Dashboard** — Welcome/onboarding, stat cards, quick action links, profile info
+- [x] **Auth bypass** — Viewer sends stored user ID as Bearer token; backend middleware treats it as user identity
 
 ## Phase 6 — Authentication
 

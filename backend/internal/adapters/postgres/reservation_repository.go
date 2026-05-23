@@ -99,6 +99,43 @@ func (r *ReservationRepository) ListByUserAndWeek(ctx context.Context, userID uu
 	return reservations, nil
 }
 
+func (r *ReservationRepository) ListByDate(ctx context.Context, date domain.Date) ([]domain.Reservation, error) {
+	results, err := r.q.ListReservationsByDate(ctx, domainDateToPgDate(date))
+	if err != nil {
+		return nil, err
+	}
+	reservations := make([]domain.Reservation, len(results))
+	for i, row := range results {
+		reservations[i] = domain.Reservation{
+			ID:     row.ID,
+			UserID: row.UserID,
+			SeatID: row.SeatID,
+			Date:   dateFromPgDate(row.Date),
+		}
+	}
+	return reservations, nil
+}
+
+func (r *ReservationRepository) ListByUserAndDate(ctx context.Context, userID uuid.UUID, date domain.Date) ([]domain.Reservation, error) {
+	results, err := r.q.ListReservationsByUserAndDate(ctx, sqlc.ListReservationsByUserAndDateParams{
+		UserID: userID,
+		Date:   domainDateToPgDate(date),
+	})
+	if err != nil {
+		return nil, err
+	}
+	reservations := make([]domain.Reservation, len(results))
+	for i, row := range results {
+		reservations[i] = domain.Reservation{
+			ID:     row.ID,
+			UserID: row.UserID,
+			SeatID: row.SeatID,
+			Date:   dateFromPgDate(row.Date),
+		}
+	}
+	return reservations, nil
+}
+
 func (r *ReservationRepository) CountByUserInWeek(ctx context.Context, userID uuid.UUID, start, end domain.Date) (int, error) {
 	count, err := r.q.CountReservationsByUserInWeek(ctx, sqlc.CountReservationsByUserInWeekParams{
 		UserID: userID,

@@ -78,6 +78,7 @@ func newRouter(
 		})
 
 		r.Route("/reservations", func(r chi.Router) {
+			r.Get("/", reservationHandler.List)
 			r.Post("/", reservationHandler.Create)
 			r.Get("/week", reservationHandler.GetWeek)
 			r.Delete("/{id}", reservationHandler.Cancel)

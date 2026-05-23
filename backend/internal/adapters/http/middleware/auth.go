@@ -16,14 +16,18 @@ const UserRoleKey userCtxKey = "user_role"
 func AuthMiddleware(jwtSecret string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authHeader := r.Header.Get("Authorization")
 			var userID uuid.UUID
 			var userRole string
+
+			authHeader := r.Header.Get("Authorization")
 			if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
-				// stub: parse JWT and extract user info
-				// Phase 6 will implement real JWT validation here
+				token := strings.TrimPrefix(authHeader, "Bearer ")
+				// Phase 6: real JWT validation. For now, treat token as raw user ID.
+				if parsed, err := uuid.Parse(token); err == nil {
+					userID = parsed
+				}
 			}
-			// stub: default user (uuid.Nil) until real auth is implemented
+
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)
 			ctx = context.WithValue(ctx, UserRoleKey, userRole)
 			next.ServeHTTP(w, r.WithContext(ctx))

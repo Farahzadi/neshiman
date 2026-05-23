@@ -123,6 +123,22 @@ export interface paths {
     };
   };
   "/reservations": {
+    get: {
+      parameters: {
+        query: {
+          /** Filter by user ID */
+          user_id?: string;
+          /** Date in YYYY-MM-DD format (defaults to today) */
+          date?: string;
+        };
+      };
+      responses: {
+        /** OK */
+        200: {
+          schema: definitions["dto.ReservationResponse"][];
+        };
+      };
+    };
     post: {
       parameters: {
         body: {
@@ -495,6 +511,14 @@ export interface paths {
       responses: {
         /** No Content */
         204: {
+          schema: string;
+        };
+        /** Bad Request */
+        400: {
+          schema: string;
+        };
+        /** Conflict */
+        409: {
           schema: string;
         };
       };

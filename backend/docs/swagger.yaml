@@ -337,6 +337,28 @@ paths:
       tags:
       - CrossTeamRequests
   /reservations:
+    get:
+      parameters:
+      - description: Filter by user ID
+        in: query
+        name: user_id
+        type: string
+      - description: Date in YYYY-MM-DD format (defaults to today)
+        in: query
+        name: date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ReservationResponse'
+            type: array
+      summary: List reservations
+      tags:
+      - Reservations
     post:
       consumes:
       - application/json
@@ -760,6 +782,14 @@ paths:
       responses:
         "204":
           description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "409":
+          description: Conflict
           schema:
             type: string
       summary: Delete a team
