@@ -13,17 +13,18 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (name, email, team_id, role, weekly_limit)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO users (name, email, team_id, role, weekly_limit, password_hash)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id, name, email, team_id, role, weekly_limit, created_at, updated_at, password_hash, deleted_at
 `
 
 type CreateUserParams struct {
-	Name        string      `db:"name" json:"name"`
-	Email       pgtype.Text `db:"email" json:"email"`
-	TeamID      pgtype.UUID `db:"team_id" json:"team_id"`
-	Role        string      `db:"role" json:"role"`
-	WeeklyLimit int32       `db:"weekly_limit" json:"weekly_limit"`
+	Name         string      `db:"name" json:"name"`
+	Email        pgtype.Text `db:"email" json:"email"`
+	TeamID       pgtype.UUID `db:"team_id" json:"team_id"`
+	Role         string      `db:"role" json:"role"`
+	WeeklyLimit  int32       `db:"weekly_limit" json:"weekly_limit"`
+	PasswordHash string      `db:"password_hash" json:"password_hash"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -33,6 +34,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.TeamID,
 		arg.Role,
 		arg.WeeklyLimit,
+		arg.PasswordHash,
 	)
 	var i User
 	err := row.Scan(

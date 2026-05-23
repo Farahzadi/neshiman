@@ -34,11 +34,12 @@ func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 		email = pgtype.Text{String: user.Email, Valid: true}
 	}
 	result, err := r.q.CreateUser(ctx, sqlc.CreateUserParams{
-		Name:        user.Name,
-		Email:       email,
-		TeamID:      teamID,
-		Role:        string(user.Role),
-		WeeklyLimit: int32(user.WeeklyLimit),
+		Name:         user.Name,
+		Email:        email,
+		TeamID:       teamID,
+		Role:         string(user.Role),
+		WeeklyLimit:  int32(user.WeeklyLimit),
+		PasswordHash: user.PasswordHash,
 	})
 	if err != nil {
 		return err

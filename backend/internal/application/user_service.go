@@ -6,7 +6,10 @@ import (
 	"neshiman/backend/internal/ports"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
+
+const DefaultPassword = "password"
 
 type UserService struct {
 	users ports.UserRepository
@@ -21,6 +24,11 @@ func (s *UserService) CreateUser(ctx context.Context, name, email string, teamID
 		return nil, domain.ErrWeeklyLimitTooHigh
 	}
 	user := domain.NewUser(name, email, teamID, role, weeklyLimit)
+	hash, err := bcrypt.GenerateFromPassword([]byte(DefaultPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+	user.PasswordHash = string(hash)
 	if err := s.users.Create(ctx, user); err != nil {
 		return nil, err
 	}
