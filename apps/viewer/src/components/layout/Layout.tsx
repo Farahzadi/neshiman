@@ -1,5 +1,5 @@
 import { Component, createMemo, For } from 'solid-js';
-import { A, useLocation, useNavigate } from '@solidjs/router';
+import { A, useNavigate } from '@solidjs/router';
 import type { RouteSectionProps } from '@solidjs/router';
 import { setAuthHeader } from '@neshiman/api-client';
 
@@ -18,7 +18,6 @@ function getUser() {
 }
 
 const Layout: Component<RouteSectionProps> = (props) => {
-  const location = useLocation();
   const navigate = useNavigate();
 
   const currentUser = createMemo(() => getUser());
@@ -44,22 +43,17 @@ const Layout: Component<RouteSectionProps> = (props) => {
               </A>
               <nav class="hidden md:flex items-center gap-1">
                 <For each={navItems}>
-                  {(item) => {
-                    const isActive = location.pathname === item.href ||
-                      (item.href !== '/' && location.pathname.startsWith(item.href));
-                    return (
-                      <A
-                        href={item.href}
-                        class="px-3 py-2 text-sm font-medium rounded-lg transition-colors"
-                        classList={{
-                          'bg-blue-50 text-blue-700': isActive,
-                          'text-gray-600 hover:text-gray-900 hover:bg-gray-50': !isActive,
-                        }}
-                      >
-                        {item.label}
-                      </A>
-                    );
-                  }}
+                  {(item) => (
+                    <A
+                      href={item.href}
+                      end={item.href === '/'}
+                      activeClass="bg-blue-50 text-blue-700"
+                      inactiveClass="text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                      class="px-3 py-2 text-sm font-medium rounded-lg transition-colors"
+                    >
+                      {item.label}
+                    </A>
+                  )}
                 </For>
               </nav>
             </div>

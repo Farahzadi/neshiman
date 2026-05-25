@@ -1,5 +1,5 @@
 import { Component, createMemo, For, createSignal } from 'solid-js';
-import { A, useLocation, useNavigate } from '@solidjs/router';
+import { A, useNavigate } from '@solidjs/router';
 import type { RouteSectionProps } from '@solidjs/router';
 import { setAuthHeader } from '@neshiman/api-client';
 
@@ -65,7 +65,6 @@ function getCurrentUser() {
 }
 
 const Layout: Component<RouteSectionProps> = (props) => {
-  const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = createSignal(false);
   const currentUser = createMemo(() => getCurrentUser());
@@ -102,11 +101,10 @@ const Layout: Component<RouteSectionProps> = (props) => {
                 <li>
                   <A
                     href={item.href}
+                    end={item.href === '/'}
+                    activeClass="bg-gray-700 text-white"
+                    inactiveClass="text-gray-300 hover:bg-gray-800 hover:text-white"
                     class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors overflow-hidden whitespace-nowrap"
-                    classList={{
-                      'bg-gray-700 text-white': location.pathname === item.href || (item.href !== '/' && location.pathname.startsWith(item.href)),
-                      'text-gray-300 hover:bg-gray-800 hover:text-white': !(location.pathname === item.href || (item.href !== '/' && location.pathname.startsWith(item.href))),
-                    }}
                   >
                     <Icon />
                     <span classList={{ 'opacity-100': !collapsed(), 'opacity-0': collapsed() }}>{item.label}</span>
