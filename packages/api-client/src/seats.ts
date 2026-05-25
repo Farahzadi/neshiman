@@ -6,7 +6,6 @@ import type { definitions } from '@neshiman/api-types';
 type Seat = definitions['dto.SeatResponse'];
 type CreateSeat = definitions['dto.CreateSeatRequest'];
 type MoveSeat = definitions['dto.MoveSeatRequest'];
-type RotateSeat = definitions['dto.RotateSeatRequest'];
 type BulkSyncSeatsRequest = definitions['dto.BulkSyncSeatsRequest'];
 type BulkSyncSeatsResponse = definitions['dto.BulkSyncSeatsResponse'];
 
@@ -52,18 +51,6 @@ export function useMoveSeat() {
   return useMutation(() => ({
     mutationFn: ({ id, data }: { id: string; data: MoveSeat }) =>
       apiFetch<Seat>(`/v1/seats/${id}/move`, { method: 'PUT', body: JSON.stringify(data) }),
-    onSuccess: (seat) => {
-      qc.invalidateQueries({ queryKey: queryKeys.seats.detail(seat.id!) });
-      qc.invalidateQueries({ queryKey: queryKeys.rooms.seats(seat.room_id!) });
-    },
-  }));
-}
-
-export function useRotateSeat() {
-  const qc = useQueryClient();
-  return useMutation(() => ({
-    mutationFn: ({ id, data }: { id: string; data: RotateSeat }) =>
-      apiFetch<Seat>(`/v1/seats/${id}/rotate`, { method: 'PUT', body: JSON.stringify(data) }),
     onSuccess: (seat) => {
       qc.invalidateQueries({ queryKey: queryKeys.seats.detail(seat.id!) });
       qc.invalidateQueries({ queryKey: queryKeys.rooms.seats(seat.room_id!) });

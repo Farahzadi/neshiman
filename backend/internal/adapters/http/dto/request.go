@@ -22,12 +22,11 @@ type CreateTeamRequest struct {
 }
 
 type CreateSeatRequest struct {
-	RoomID   string `json:"room_id"`
-	TeamID   string `json:"team_id"`
-	Label    string `json:"label"`
-	PosX     int    `json:"pos_x"`
-	PosY     int    `json:"pos_y"`
-	Rotation int    `json:"rotation"`
+	RoomID string `json:"room_id"`
+	TeamID string `json:"team_id"`
+	Label  string `json:"label"`
+	PosX   int    `json:"pos_x"`
+	PosY   int    `json:"pos_y"`
 }
 
 type MoveSeatRequest struct {
@@ -52,17 +51,12 @@ type CreateCrossTeamRequestRequest struct {
 	Date         string `json:"date"` // YYYY-MM-DD
 }
 
-type RotateSeatRequest struct {
-	Rotation int `json:"rotation"`
-}
-
 type BulkSeatItem struct {
-	ID       *string `json:"id"`
-	TeamID   string  `json:"team_id"`
-	Label    string  `json:"label"`
-	PosX     int     `json:"pos_x"`
-	PosY     int     `json:"pos_y"`
-	Rotation int     `json:"rotation"`
+	ID     *string `json:"id"`
+	TeamID string  `json:"team_id"`
+	Label  string  `json:"label"`
+	PosX   int     `json:"pos_x"`
+	PosY   int     `json:"pos_y"`
 }
 
 type BulkSyncSeatsRequest struct {

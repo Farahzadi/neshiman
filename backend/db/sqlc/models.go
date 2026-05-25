@@ -48,7 +48,6 @@ type Seat struct {
 	Label     string             `db:"label" json:"label"`
 	PosX      int32              `db:"pos_x" json:"pos_x"`
 	PosY      int32              `db:"pos_y" json:"pos_y"`
-	Rotation  int32              `db:"rotation" json:"rotation"`
 	CreatedAt time.Time          `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time          `db:"updated_at" json:"updated_at"`
 	DeletedAt pgtype.Timestamptz `db:"deleted_at" json:"deleted_at"`

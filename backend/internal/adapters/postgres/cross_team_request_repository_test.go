@@ -32,7 +32,7 @@ func TestCrossTeamRequestRepository(t *testing.T) {
 			t.Fatalf("setup team: %v", err)
 		}
 
-		seat, _ := domain.NewSeat(room.ID, team.ID, "CTR1-"+suffix, domain.Position{X: 1, Y: 1}, domain.Rotation0)
+		seat, _ := domain.NewSeat(room.ID, team.ID, "CTR1-"+suffix, domain.Position{X: 1, Y: 1})
 		if err := seatRepo.Create(ctx, seat); err != nil {
 			t.Fatalf("setup seat: %v", err)
 		}

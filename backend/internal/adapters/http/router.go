@@ -57,7 +57,6 @@ func newRouter(
 				r.Get("/", seatHandler.ListByRoom)
 				r.Get("/{id}", seatHandler.GetByID)
 				r.Put("/{id}/move", seatHandler.Move)
-				r.Put("/{id}/rotate", seatHandler.Rotate)
 				r.Delete("/{id}", seatHandler.Delete)
 			})
 

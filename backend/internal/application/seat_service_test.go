@@ -22,7 +22,7 @@ func TestSeatService_CreateSeat(t *testing.T) {
 			},
 		})
 
-		seat, err := svc.CreateSeat(context.Background(), roomID, teamID, "A1", 5, 3, 0)
+		seat, err := svc.CreateSeat(context.Background(), roomID, teamID, "A1", 5, 3)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -34,23 +34,13 @@ func TestSeatService_CreateSeat(t *testing.T) {
 		}
 	})
 
-	t.Run("invalid rotation", func(t *testing.T) {
-		svc := NewSeatService(&mockSeatRepo{
-			createFn: func(_ context.Context, _ *domain.Seat) error { return nil },
-		})
-		_, err := svc.CreateSeat(context.Background(), roomID, teamID, "X", 1, 1, 45)
-		if !errors.Is(err, domain.ErrInvalidRotation) {
-			t.Errorf("got %v, want %v", err, domain.ErrInvalidRotation)
-		}
-	})
-
 	t.Run("repo error", func(t *testing.T) {
 		svc := NewSeatService(&mockSeatRepo{
 			createFn: func(_ context.Context, _ *domain.Seat) error {
 				return errors.New("db error")
 			},
 		})
-		_, err := svc.CreateSeat(context.Background(), roomID, teamID, "X", 1, 1, 0)
+		_, err := svc.CreateSeat(context.Background(), roomID, teamID, "X", 1, 1)
 		if err == nil || err.Error() != "db error" {
 			t.Errorf("got %v, want db error", err)
 		}
@@ -77,42 +67,6 @@ func TestSeatService_MoveSeat(t *testing.T) {
 	}
 	if seat.Position.X != 10 || seat.Position.Y != 20 {
 		t.Errorf("got %+v, want {10 20}", seat.Position)
-	}
-}
-
-func TestSeatService_RotateSeat(t *testing.T) {
-	id := uuid.New()
-	svc := NewSeatService(&mockSeatRepo{
-		getByIDFn: func(_ context.Context, _ uuid.UUID) (*domain.Seat, error) {
-			return &domain.Seat{ID: id, Rotation: domain.Rotation0}, nil
-		},
-		updateFn: func(_ context.Context, s *domain.Seat) error {
-			if s.Rotation != domain.Rotation180 {
-				t.Errorf("got rotation %d, want %d", s.Rotation, domain.Rotation180)
-			}
-			return nil
-		},
-	})
-
-	seat, err := svc.RotateSeat(context.Background(), id, 180)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if seat.Rotation != domain.Rotation180 {
-		t.Errorf("got %d, want %d", seat.Rotation, domain.Rotation180)
-	}
-}
-
-func TestSeatService_RotateSeat_Invalid(t *testing.T) {
-	id := uuid.New()
-	svc := NewSeatService(&mockSeatRepo{
-		getByIDFn: func(_ context.Context, _ uuid.UUID) (*domain.Seat, error) {
-			return &domain.Seat{ID: id}, nil
-		},
-	})
-	_, err := svc.RotateSeat(context.Background(), id, 45)
-	if !errors.Is(err, domain.ErrInvalidRotation) {
-		t.Errorf("got %v, want %v", err, domain.ErrInvalidRotation)
 	}
 }
 
@@ -178,8 +132,8 @@ func TestSeatService_BulkSyncSeats(t *testing.T) {
 		})
 
 		seats := []domain.Seat{
-			{ID: existingID, TeamID: teamID, Label: "A1", Position: domain.Position{X: 0, Y: 0}, Rotation: domain.Rotation0},
-			{TeamID: teamID, Label: "B2", Position: domain.Position{X: 3, Y: 5}, Rotation: domain.Rotation90},
+			{ID: existingID, TeamID: teamID, Label: "A1", Position: domain.Position{X: 0, Y: 0}},
+			{TeamID: teamID, Label: "B2", Position: domain.Position{X: 3, Y: 5}},
 		}
 		result, err := svc.BulkSyncSeats(context.Background(), roomID, seats)
 		if err != nil {
@@ -190,17 +144,6 @@ func TestSeatService_BulkSyncSeats(t *testing.T) {
 		}
 	})
 
-	t.Run("invalid rotation", func(t *testing.T) {
-		svc := NewSeatService(&mockSeatRepo{})
-		seats := []domain.Seat{
-			{TeamID: teamID, Label: "X", Position: domain.Position{X: 0, Y: 0}, Rotation: domain.Rotation(45)},
-		}
-		_, err := svc.BulkSyncSeats(context.Background(), roomID, seats)
-		if !errors.Is(err, domain.ErrInvalidRotation) {
-			t.Errorf("got %v, want %v", err, domain.ErrInvalidRotation)
-		}
-	})
-
 	t.Run("repo error", func(t *testing.T) {
 		svc := NewSeatService(&mockSeatRepo{
 			bulkSyncFn: func(_ context.Context, _ uuid.UUID, _ []domain.Seat) ([]domain.Seat, error) {
@@ -208,7 +151,7 @@ func TestSeatService_BulkSyncSeats(t *testing.T) {
 			},
 		})
 		seats := []domain.Seat{
-			{TeamID: teamID, Label: "A1", Position: domain.Position{X: 0, Y: 0}, Rotation: domain.Rotation0},
+			{TeamID: teamID, Label: "A1", Position: domain.Position{X: 0, Y: 0}},
 		}
 		_, err := svc.BulkSyncSeats(context.Background(), roomID, seats)
 		if err == nil || err.Error() != "db error" {

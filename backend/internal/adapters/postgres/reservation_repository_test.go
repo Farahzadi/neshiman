@@ -33,7 +33,7 @@ func TestReservationRepository(t *testing.T) {
 			t.Fatalf("setup team: %v", err)
 		}
 
-		seat, _ := domain.NewSeat(room.ID, team.ID, "R1-"+suffix, domain.Position{X: 1, Y: 1}, domain.Rotation0)
+		seat, _ := domain.NewSeat(room.ID, team.ID, "R1-"+suffix, domain.Position{X: 1, Y: 1})
 		if err := seatRepo.Create(ctx, seat); err != nil {
 			t.Fatalf("setup seat: %v", err)
 		}
@@ -133,7 +133,7 @@ func TestReservationRepository(t *testing.T) {
 
 		// Create another seat in same room
 		room2, team2, _, _ := setup(t, "luw2")
-		seatB, _ := domain.NewSeat(room2.ID, team2.ID, "R2", domain.Position{X: 2, Y: 1}, domain.Rotation0)
+		seatB, _ := domain.NewSeat(room2.ID, team2.ID, "R2", domain.Position{X: 2, Y: 1})
 		seatRepo.Create(ctx, seatB)
 
 		// Mon May 18 2026
@@ -159,7 +159,7 @@ func TestReservationRepository(t *testing.T) {
 		truncate(t, pool)
 		_, _, seatA, user := setup(t, "cwu1")
 		room3, team3, _, _ := setup(t, "cwu2")
-		seatB, _ := domain.NewSeat(room3.ID, team3.ID, "R2", domain.Position{X: 2, Y: 1}, domain.Rotation0)
+		seatB, _ := domain.NewSeat(room3.ID, team3.ID, "R2", domain.Position{X: 2, Y: 1})
 		seatRepo.Create(ctx, seatB)
 
 		monday := makeDate(2026, 5, 18)

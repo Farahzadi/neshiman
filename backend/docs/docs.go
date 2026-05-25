@@ -838,52 +838,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/seats/{id}/rotate": {
-            "put": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Seats"
-                ],
-                "summary": "Rotate a seat",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Seat ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Rotation",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.RotateSeatRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.SeatResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/teams": {
             "get": {
                 "produces": [
@@ -1285,9 +1239,6 @@ const docTemplate = `{
                 "pos_y": {
                     "type": "integer"
                 },
-                "rotation": {
-                    "type": "integer"
-                },
                 "team_id": {
                     "type": "string"
                 }
@@ -1367,9 +1318,6 @@ const docTemplate = `{
                 },
                 "room_id": {
                     "type": "string"
-                },
-                "rotation": {
-                    "type": "integer"
                 },
                 "team_id": {
                     "type": "string"
@@ -1508,14 +1456,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.RotateSeatRequest": {
-            "type": "object",
-            "properties": {
-                "rotation": {
-                    "type": "integer"
-                }
-            }
-        },
         "dto.SeatResponse": {
             "type": "object",
             "properties": {
@@ -1533,9 +1473,6 @@ const docTemplate = `{
                 },
                 "room_id": {
                     "type": "string"
-                },
-                "rotation": {
-                    "type": "integer"
                 },
                 "team_id": {
                     "type": "string"

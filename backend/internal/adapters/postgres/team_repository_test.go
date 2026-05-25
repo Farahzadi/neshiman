@@ -77,7 +77,7 @@ func TestTeamRepository(t *testing.T) {
 		seatRepo := NewSeatRepository(pool)
 		room, _ := domain.NewRoom("Room", 10, 10)
 		roomRepo.Create(ctx, room)
-		seatRepo.Create(ctx, mustNewSeat(t, room.ID, team.ID, "S1", 0, 0, 0))
+		seatRepo.Create(ctx, mustNewSeat(t, room.ID, team.ID, "S1", 0, 0))
 
 		if err := repo.Delete(ctx, team.ID); err != nil {
 			t.Errorf("expected no error, got %v", err)

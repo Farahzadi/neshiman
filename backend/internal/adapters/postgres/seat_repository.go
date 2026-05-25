@@ -25,12 +25,11 @@ func NewSeatRepository(pool *pgxpool.Pool) ports.SeatRepository {
 
 func (r *SeatRepository) Create(ctx context.Context, seat *domain.Seat) error {
 	result, err := r.q.CreateSeat(ctx, sqlc.CreateSeatParams{
-		RoomID:   seat.RoomID,
-		TeamID:   seat.TeamID,
-		Label:    seat.Label,
-		PosX:     int32(seat.Position.X),
-		PosY:     int32(seat.Position.Y),
-		Rotation: int32(seat.Rotation),
+		RoomID: seat.RoomID,
+		TeamID: seat.TeamID,
+		Label:  seat.Label,
+		PosX:   int32(seat.Position.X),
+		PosY:   int32(seat.Position.Y),
 	})
 	if err != nil {
 		return err
@@ -56,7 +55,6 @@ func (r *SeatRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Sea
 			X: int(result.PosX),
 			Y: int(result.PosY),
 		},
-		Rotation: domain.Rotation(result.Rotation),
 	}, nil
 }
 
@@ -76,7 +74,6 @@ func (r *SeatRepository) ListByRoom(ctx context.Context, roomID uuid.UUID) ([]do
 				X: int(row.PosX),
 				Y: int(row.PosY),
 			},
-			Rotation: domain.Rotation(row.Rotation),
 		}
 	}
 	return seats, nil
@@ -84,11 +81,10 @@ func (r *SeatRepository) ListByRoom(ctx context.Context, roomID uuid.UUID) ([]do
 
 func (r *SeatRepository) Update(ctx context.Context, seat *domain.Seat) error {
 	_, err := r.q.UpdateSeat(ctx, sqlc.UpdateSeatParams{
-		ID:       seat.ID,
-		Label:    seat.Label,
-		PosX:     int32(seat.Position.X),
-		PosY:     int32(seat.Position.Y),
-		Rotation: int32(seat.Rotation),
+		ID:    seat.ID,
+		Label: seat.Label,
+		PosX:  int32(seat.Position.X),
+		PosY:  int32(seat.Position.Y),
 	})
 	return err
 }
@@ -126,12 +122,11 @@ func (r *SeatRepository) BulkSync(ctx context.Context, roomID uuid.UUID, seats [
 	for _, seat := range seats {
 		if seat.ID == uuid.Nil {
 			created, err := q.CreateSeat(ctx, sqlc.CreateSeatParams{
-				RoomID:   roomID,
-				TeamID:   seat.TeamID,
-				Label:    seat.Label,
-				PosX:     int32(seat.Position.X),
-				PosY:     int32(seat.Position.Y),
-				Rotation: int32(seat.Rotation),
+				RoomID: roomID,
+				TeamID: seat.TeamID,
+				Label:  seat.Label,
+				PosX:   int32(seat.Position.X),
+				PosY:   int32(seat.Position.Y),
 			})
 			if err != nil {
 				return nil, err
@@ -141,12 +136,11 @@ func (r *SeatRepository) BulkSync(ctx context.Context, roomID uuid.UUID, seats [
 			incomingIDs[seat.ID] = struct{}{}
 			if _, exists := existingMap[seat.ID]; exists {
 				updated, err := q.UpdateSeatFull(ctx, sqlc.UpdateSeatFullParams{
-					ID:       seat.ID,
-					TeamID:   seat.TeamID,
-					Label:    seat.Label,
-					PosX:     int32(seat.Position.X),
-					PosY:     int32(seat.Position.Y),
-					Rotation: int32(seat.Rotation),
+					ID:     seat.ID,
+					TeamID: seat.TeamID,
+					Label:  seat.Label,
+					PosX:   int32(seat.Position.X),
+					PosY:   int32(seat.Position.Y),
 				})
 				if err != nil {
 					return nil, err
@@ -181,6 +175,5 @@ func rowToSeat(row sqlc.Seat) domain.Seat {
 			X: int(row.PosX),
 			Y: int(row.PosY),
 		},
-		Rotation: domain.Rotation(row.Rotation),
 	}
 }

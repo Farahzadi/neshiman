@@ -147,37 +147,35 @@ func seedRooms(ctx context.Context, q *sqlc.Queries) map[string]sqlc.Room {
 
 func seedSeats(ctx context.Context, q *sqlc.Queries, rooms map[string]sqlc.Room, teams map[string]sqlc.Team) map[string]sqlc.Seat {
 	type seatSeed struct {
-		key      string
-		roomKey  string
-		teamKey  string
-		label    string
-		posX     int32
-		posY     int32
-		rotation int32
+		key     string
+		roomKey string
+		teamKey string
+		label   string
+		posX    int32
+		posY    int32
 	}
 
 	seeds := []seatSeed{
-		{key: "conf_a_1", roomKey: "conf_a", teamKey: "eng", label: "A1", posX: 1, posY: 1, rotation: 0},
-		{key: "conf_a_2", roomKey: "conf_a", teamKey: "eng", label: "A2", posX: 2, posY: 1, rotation: 0},
-		{key: "conf_a_3", roomKey: "conf_a", teamKey: "design", label: "B1", posX: 1, posY: 2, rotation: 0},
-		{key: "conf_a_4", roomKey: "conf_a", teamKey: "design", label: "B2", posX: 2, posY: 2, rotation: 0},
-		{key: "open_1", roomKey: "open_space", teamKey: "eng", label: "E1", posX: 2, posY: 2, rotation: 0},
-		{key: "open_2", roomKey: "open_space", teamKey: "eng", label: "E2", posX: 4, posY: 2, rotation: 90},
-		{key: "open_3", roomKey: "open_space", teamKey: "design", label: "D1", posX: 2, posY: 6, rotation: 0},
-		{key: "open_4", roomKey: "open_space", teamKey: "design", label: "D2", posX: 4, posY: 6, rotation: 0},
-		{key: "open_5", roomKey: "open_space", teamKey: "marketing", label: "M1", posX: 2, posY: 10, rotation: 0},
-		{key: "open_6", roomKey: "open_space", teamKey: "marketing", label: "M2", posX: 4, posY: 10, rotation: 0},
+		{key: "conf_a_1", roomKey: "conf_a", teamKey: "eng", label: "A1", posX: 1, posY: 1},
+		{key: "conf_a_2", roomKey: "conf_a", teamKey: "eng", label: "A2", posX: 2, posY: 1},
+		{key: "conf_a_3", roomKey: "conf_a", teamKey: "design", label: "B1", posX: 1, posY: 2},
+		{key: "conf_a_4", roomKey: "conf_a", teamKey: "design", label: "B2", posX: 2, posY: 2},
+		{key: "open_1", roomKey: "open_space", teamKey: "eng", label: "E1", posX: 2, posY: 2},
+		{key: "open_2", roomKey: "open_space", teamKey: "eng", label: "E2", posX: 4, posY: 2},
+		{key: "open_3", roomKey: "open_space", teamKey: "design", label: "D1", posX: 2, posY: 6},
+		{key: "open_4", roomKey: "open_space", teamKey: "design", label: "D2", posX: 4, posY: 6},
+		{key: "open_5", roomKey: "open_space", teamKey: "marketing", label: "M1", posX: 2, posY: 10},
+		{key: "open_6", roomKey: "open_space", teamKey: "marketing", label: "M2", posX: 4, posY: 10},
 	}
 
 	result := make(map[string]sqlc.Seat, len(seeds))
 	for _, s := range seeds {
 		seat, err := q.CreateSeat(ctx, sqlc.CreateSeatParams{
-			RoomID:   rooms[s.roomKey].ID,
-			TeamID:   teams[s.teamKey].ID,
-			Label:    s.label,
-			PosX:     s.posX,
-			PosY:     s.posY,
-			Rotation: s.rotation,
+			RoomID: rooms[s.roomKey].ID,
+			TeamID: teams[s.teamKey].ID,
+			Label:  s.label,
+			PosX:   s.posX,
+			PosY:   s.posY,
 		})
 		if err != nil {
 			log.Fatalf("failed to create seat %s: %v", s.label, err)

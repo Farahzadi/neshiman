@@ -45,7 +45,7 @@ func (h *SeatHandler) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid team_id", http.StatusBadRequest)
 		return
 	}
-	seat, err := h.seatSvc.CreateSeat(r.Context(), roomID, teamID, req.Label, req.PosX, req.PosY, req.Rotation)
+	seat, err := h.seatSvc.CreateSeat(r.Context(), roomID, teamID, req.Label, req.PosX, req.PosY)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -130,35 +130,6 @@ func (h *SeatHandler) Move(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, dto.SeatToResponse(seat))
 }
 
-// RotateSeat rotates a seat
-// @Summary      Rotate a seat
-// @Tags         Seats
-// @Accept       json
-// @Produce      json
-// @Param        id       path      string                true  "Seat ID"
-// @Param        request  body      dto.RotateSeatRequest  true  "Rotation"
-// @Success      200      {object}  dto.SeatResponse
-// @Failure      400      {string}  string
-// @Router       /seats/{id}/rotate [put]
-func (h *SeatHandler) Rotate(w http.ResponseWriter, r *http.Request) {
-	id, err := uuid.Parse(chi.URLParam(r, "id"))
-	if err != nil {
-		http.Error(w, "invalid seat id", http.StatusBadRequest)
-		return
-	}
-	var req dto.RotateSeatRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
-	seat, err := h.seatSvc.RotateSeat(r.Context(), id, req.Rotation)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	writeJSON(w, http.StatusOK, dto.SeatToResponse(seat))
-}
-
 // BulkSyncSeats syncs the full list of seats for a room
 // @Summary      Bulk sync seats for a room
 // @Tags         Rooms
@@ -203,7 +174,6 @@ func (h *SeatHandler) BulkSync(w http.ResponseWriter, r *http.Request) {
 				X: item.PosX,
 				Y: item.PosY,
 			},
-			Rotation: domain.Rotation(item.Rotation),
 		}
 	}
 	result, err := h.seatSvc.BulkSyncSeats(r.Context(), roomID, seats)

@@ -454,30 +454,6 @@ export interface paths {
       };
     };
   };
-  "/seats/{id}/rotate": {
-    put: {
-      parameters: {
-        path: {
-          /** Seat ID */
-          id: string;
-        };
-        body: {
-          /** Rotation */
-          request: definitions["dto.RotateSeatRequest"];
-        };
-      };
-      responses: {
-        /** OK */
-        200: {
-          schema: definitions["dto.SeatResponse"];
-        };
-        /** Bad Request */
-        400: {
-          schema: string;
-        };
-      };
-    };
-  };
   "/teams": {
     get: {
       responses: {
@@ -700,7 +676,6 @@ export interface definitions {
     label?: string;
     pos_x?: number;
     pos_y?: number;
-    rotation?: number;
     team_id?: string;
   };
   "dto.BulkSyncSeatsRequest": {
@@ -729,7 +704,6 @@ export interface definitions {
     pos_x?: number;
     pos_y?: number;
     room_id?: string;
-    rotation?: number;
     team_id?: string;
   };
   "dto.CreateTeamRequest": {
@@ -779,16 +753,12 @@ export interface definitions {
     name?: string;
     updated_at?: string;
   };
-  "dto.RotateSeatRequest": {
-    rotation?: number;
-  };
   "dto.SeatResponse": {
     id?: string;
     label?: string;
     pos_x?: number;
     pos_y?: number;
     room_id?: string;
-    rotation?: number;
     team_id?: string;
   };
   "dto.SetPasswordRequest": {

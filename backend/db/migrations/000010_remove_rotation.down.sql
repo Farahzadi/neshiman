@@ -1,0 +1,1 @@
+ALTER TABLE seats ADD COLUMN rotation INT NOT NULL DEFAULT 0 CHECK (rotation IN (0, 90, 180, 270));

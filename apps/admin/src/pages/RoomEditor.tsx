@@ -54,8 +54,16 @@ const roomEditorStyle = `
     z-index: 5;
   }
   .room-editor-cell.selected {
-    box-shadow: 0 0 0 3px #2563eb, 0 2px 8px rgba(37,99,235,0.2);
-    z-index: 10;
+    box-shadow: 0 0 0 3px #2563eb, 0 0 0 6px rgba(37,99,235,0.15);
+    z-index: 20;
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+    filter: brightness(1.15);
+  }
+  .room-editor-cell.selected:hover {
+    box-shadow: 0 0 0 3px #2563eb, 0 0 0 6px rgba(37,99,235,0.15);
+    transform: none;
+    filter: brightness(1.15);
   }
   .room-editor-cell.place-mode {
     cursor: crosshair;
@@ -70,6 +78,35 @@ const RoomEditor: Component = () => {
   const bulkSync = useBulkSyncSeats();
 
   const [localSeats, setLocalSeats] = createStore<Seat[]>([]);
+
+  const seatsWithSelection = createMemo(() =>
+    localSeats.map((seat, i) => ({ seat, isSelected: selectedIdx() === i }))
+  );
+
+  const seatElements = createMemo(() =>
+    seatsWithSelection().map((item) => {
+      const seat = item.seat;
+      const colors = teamColor(seat);
+      return (
+        <div
+          class={`room-editor-cell absolute ${colors.bg} ${colors.border}`}
+          classList={{
+            selected: item.isSelected,
+            'place-mode': mode() === 'place',
+          }}
+          style={{
+            left: `${(seat.pos_x ?? 0) * CELL}px`,
+            top: `${(seat.pos_y ?? 0) * CELL}px`,
+            'z-index': item.isSelected ? 20 : 1,
+          }}
+        >
+          <span class={`text-center leading-tight ${colors.text}`}>
+            {seat.label}
+          </span>
+        </div>
+      );
+    })
+  );
   const [originalJson, setOriginalJson] = createSignal('');
   const [selectedIdx, setSelectedIdx] = createSignal<number | null>(null);
   const [mode, setMode] = createSignal<'select' | 'place'>('select');
@@ -172,7 +209,6 @@ const RoomEditor: Component = () => {
       label,
       pos_x: gx,
       pos_y: gy,
-      rotation: 0,
     };
     setLocalSeats(idx, newSeat);
     setSelectedIdx(idx);
@@ -183,14 +219,6 @@ const RoomEditor: Component = () => {
     if (idx === null || idx < 0 || idx >= localSeats.length) return;
     setLocalSeats(localSeats.filter((_: Seat, i: number) => i !== idx));
     setSelectedIdx(null);
-  };
-
-  const handleRotate = () => {
-    const idx = selectedIdx();
-    if (idx === null || idx < 0 || idx >= localSeats.length) return;
-    const current = localSeats[idx].rotation ?? 0;
-    const newRotation = (current + 90) % 360;
-    setLocalSeats(idx, 'rotation', newRotation);
   };
 
   const handleSave = async () => {
@@ -204,7 +232,6 @@ const RoomEditor: Component = () => {
         label: s.label ?? '',
         pos_x: s.pos_x ?? 0,
         pos_y: s.pos_y ?? 0,
-        rotation: s.rotation ?? 0,
       }));
       const result = await bulkSync.mutateAsync({
         roomId: params.id,
@@ -311,31 +338,7 @@ const RoomEditor: Component = () => {
               height: `${(room.data?.grid_height ?? 8) * CELL + 1}px`,
             }}
           >
-            <For each={localSeats}>
-              {(seat, idx) => {
-                const colors = teamColor(seat);
-                const isSelected = selectedIdx() === idx();
-                return (
-                  <div
-                    class={`room-editor-cell absolute ${colors.bg} ${colors.border}`}
-                    classList={{
-                      selected: isSelected,
-                      'place-mode': mode() === 'place',
-                    }}
-                    style={{
-                      left: `${(seat.pos_x ?? 0) * CELL}px`,
-                      top: `${(seat.pos_y ?? 0) * CELL}px`,
-                      transform: `rotate(${seat.rotation ?? 0}deg)`,
-                      'z-index': isSelected ? 20 : 1,
-                    }}
-                  >
-                    <span class={`text-center leading-tight ${colors.text}`}>
-                      {seat.label}
-                    </span>
-                  </div>
-                );
-              }}
-            </For>
+            {seatElements()}
 
             <Show when={localSeats.length === 0 && !serverSeats.isLoading}>
               <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -349,7 +352,6 @@ const RoomEditor: Component = () => {
           {(seat) => (
             <div class="w-64 border-l bg-white p-4 shrink-0 overflow-y-auto shadow-lg z-10">
               <h3 class="font-semibold text-sm mb-4">Seat Properties</h3>
-
               <div class="space-y-3">
                 <div>
                   <label class="block text-xs font-medium text-gray-500 mb-1">Label</label>
@@ -376,33 +378,6 @@ const RoomEditor: Component = () => {
                 <div>
                   <label class="block text-xs font-medium text-gray-500 mb-1">Position</label>
                   <p class="text-sm text-gray-700">({seat().pos_x}, {seat().pos_y})</p>
-                </div>
-
-                <div>
-                  <label class="block text-xs font-medium text-gray-500 mb-1">Rotation</label>
-                  <div class="flex gap-1.5">
-                    <button
-                      onClick={() => updateSelected('rotation', 0)}
-                      class={`px-2.5 py-1 text-xs rounded border ${seat().rotation === 0 || !seat().rotation ? 'bg-blue-100 border-blue-400 text-blue-800' : 'hover:bg-gray-50'}`}
-                    >0°</button>
-                    <button
-                      onClick={() => updateSelected('rotation', 90)}
-                      class={`px-2.5 py-1 text-xs rounded border ${seat().rotation === 90 ? 'bg-blue-100 border-blue-400 text-blue-800' : 'hover:bg-gray-50'}`}
-                    >90°</button>
-                    <button
-                      onClick={() => updateSelected('rotation', 180)}
-                      class={`px-2.5 py-1 text-xs rounded border ${seat().rotation === 180 ? 'bg-blue-100 border-blue-400 text-blue-800' : 'hover:bg-gray-50'}`}
-                    >180°</button>
-                    <button
-                      onClick={() => updateSelected('rotation', 270)}
-                      class={`px-2.5 py-1 text-xs rounded border ${seat().rotation === 270 ? 'bg-blue-100 border-blue-400 text-blue-800' : 'hover:bg-gray-50'}`}
-                    >270°</button>
-                    <button
-                      onClick={handleRotate}
-                      class="px-2.5 py-1 text-xs rounded border hover:bg-gray-50"
-                      title="Rotate +90°"
-                    >↻</button>
-                  </div>
                 </div>
 
                 <hr class="my-3" />

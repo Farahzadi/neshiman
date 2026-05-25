@@ -10,8 +10,6 @@ definitions:
         type: integer
       pos_y:
         type: integer
-      rotation:
-        type: integer
       team_id:
         type: string
     type: object
@@ -64,8 +62,6 @@ definitions:
         type: integer
       room_id:
         type: string
-      rotation:
-        type: integer
       team_id:
         type: string
     type: object
@@ -154,11 +150,6 @@ definitions:
       updated_at:
         type: string
     type: object
-  dto.RotateSeatRequest:
-    properties:
-      rotation:
-        type: integer
-    type: object
   dto.SeatResponse:
     properties:
       id:
@@ -171,8 +162,6 @@ definitions:
         type: integer
       room_id:
         type: string
-      rotation:
-        type: integer
       team_id:
         type: string
     type: object
@@ -756,36 +745,6 @@ paths:
           schema:
             type: string
       summary: Move a seat
-      tags:
-      - Seats
-  /seats/{id}/rotate:
-    put:
-      consumes:
-      - application/json
-      parameters:
-      - description: Seat ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Rotation
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.RotateSeatRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.SeatResponse'
-        "400":
-          description: Bad Request
-          schema:
-            type: string
-      summary: Rotate a seat
       tags:
       - Seats
   /teams:

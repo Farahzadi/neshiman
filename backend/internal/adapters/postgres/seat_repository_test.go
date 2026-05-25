@@ -40,7 +40,7 @@ func TestSeatRepository(t *testing.T) {
 		room := makeRoom(t)
 		team := makeTeam(t)
 
-		seat, err := domain.NewSeat(room.ID, team.ID, "A1", domain.Position{X: 5, Y: 3}, domain.Rotation0)
+		seat, err := domain.NewSeat(room.ID, team.ID, "A1", domain.Position{X: 5, Y: 3})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -55,8 +55,8 @@ func TestSeatRepository(t *testing.T) {
 		if err != nil {
 			t.Fatalf("get: %v", err)
 		}
-		if got.Label != "A1" || got.Position.X != 5 || got.Position.Y != 3 || got.Rotation != domain.Rotation0 {
-			t.Errorf("got %+v, want A1 at (5,3) rot 0", got)
+		if got.Label != "A1" || got.Position.X != 5 || got.Position.Y != 3 {
+			t.Errorf("got %+v, want A1 at (5,3)", got)
 		}
 	})
 
@@ -73,8 +73,8 @@ func TestSeatRepository(t *testing.T) {
 		room := makeRoom(t)
 		team := makeTeam(t)
 
-		seatRepo.Create(ctx, mustNewSeat(t, room.ID, team.ID, "A1", 1, 1, 0))
-		seatRepo.Create(ctx, mustNewSeat(t, room.ID, team.ID, "A2", 2, 1, 0))
+		seatRepo.Create(ctx, mustNewSeat(t, room.ID, team.ID, "A1", 1, 1))
+		seatRepo.Create(ctx, mustNewSeat(t, room.ID, team.ID, "A2", 2, 1))
 
 		seats, err := seatRepo.ListByRoom(ctx, room.ID)
 		if err != nil {
@@ -89,19 +89,18 @@ func TestSeatRepository(t *testing.T) {
 		truncate(t, pool)
 		room := makeRoom(t)
 		team := makeTeam(t)
-		seat := mustNewSeat(t, room.ID, team.ID, "Old", 0, 0, 0)
+		seat := mustNewSeat(t, room.ID, team.ID, "Old", 0, 0)
 		seatRepo.Create(ctx, seat)
 
 		seat.Label = "Updated"
 		seat.Position = domain.Position{X: 10, Y: 20}
-		seat.Rotate(domain.Rotation90)
 		if err := seatRepo.Update(ctx, seat); err != nil {
 			t.Fatalf("update: %v", err)
 		}
 
 		got, _ := seatRepo.GetByID(ctx, seat.ID)
-		if got.Label != "Updated" || got.Position.X != 10 || got.Position.Y != 20 || got.Rotation != domain.Rotation90 {
-			t.Errorf("got %+v, want Updated at (10,20) rot 90", got)
+		if got.Label != "Updated" || got.Position.X != 10 || got.Position.Y != 20 {
+			t.Errorf("got %+v, want Updated at (10,20)", got)
 		}
 	})
 
@@ -109,7 +108,7 @@ func TestSeatRepository(t *testing.T) {
 		truncate(t, pool)
 		room := makeRoom(t)
 		team := makeTeam(t)
-		seat := mustNewSeat(t, room.ID, team.ID, "Del", 0, 0, 0)
+		seat := mustNewSeat(t, room.ID, team.ID, "Del", 0, 0)
 		seatRepo.Create(ctx, seat)
 		seatRepo.Delete(ctx, seat.ID)
 
@@ -120,9 +119,9 @@ func TestSeatRepository(t *testing.T) {
 	})
 }
 
-func mustNewSeat(t *testing.T, roomID, teamID uuid.UUID, label string, x, y, rot int) *domain.Seat {
+func mustNewSeat(t *testing.T, roomID, teamID uuid.UUID, label string, x, y int) *domain.Seat {
 	t.Helper()
-	s, err := domain.NewSeat(roomID, teamID, label, domain.Position{X: x, Y: y}, domain.Rotation(rot))
+	s, err := domain.NewSeat(roomID, teamID, label, domain.Position{X: x, Y: y})
 	if err != nil {
 		t.Fatalf("NewSeat: %v", err)
 	}
@@ -161,8 +160,8 @@ func TestSeatRepository_BulkSync(t *testing.T) {
 		team := makeTeam(t)
 
 		seats := []domain.Seat{
-			{TeamID: team.ID, Label: "S1", Position: domain.Position{X: 0, Y: 0}, Rotation: domain.Rotation0},
-			{TeamID: team.ID, Label: "S2", Position: domain.Position{X: 2, Y: 3}, Rotation: domain.Rotation90},
+			{TeamID: team.ID, Label: "S1", Position: domain.Position{X: 0, Y: 0}},
+			{TeamID: team.ID, Label: "S2", Position: domain.Position{X: 2, Y: 3}},
 		}
 		result, err := seatRepo.BulkSync(ctx, room.ID, seats)
 		if err != nil {
@@ -183,14 +182,14 @@ func TestSeatRepository_BulkSync(t *testing.T) {
 		room := makeRoom(t)
 		team := makeTeam(t)
 
-		existing := mustNewSeat(t, room.ID, team.ID, "Keep", 0, 0, 0)
-		toDelete := mustNewSeat(t, room.ID, team.ID, "Del", 5, 5, 0)
+		existing := mustNewSeat(t, room.ID, team.ID, "Keep", 0, 0)
+		toDelete := mustNewSeat(t, room.ID, team.ID, "Del", 5, 5)
 		seatRepo.Create(ctx, existing)
 		seatRepo.Create(ctx, toDelete)
 
 		updatedTeam := makeTeam(t)
 		seats := []domain.Seat{
-			{ID: existing.ID, TeamID: updatedTeam.ID, Label: "Changed", Position: domain.Position{X: 10, Y: 10}, Rotation: domain.Rotation180},
+			{ID: existing.ID, TeamID: updatedTeam.ID, Label: "Changed", Position: domain.Position{X: 10, Y: 10}},
 		}
 		result, err := seatRepo.BulkSync(ctx, room.ID, seats)
 		if err != nil {
@@ -203,7 +202,7 @@ func TestSeatRepository_BulkSync(t *testing.T) {
 		if got.ID != existing.ID {
 			t.Error("expected same ID for updated seat")
 		}
-		if got.Label != "Changed" || got.Position.X != 10 || got.Position.Y != 10 || got.Rotation != domain.Rotation180 {
+		if got.Label != "Changed" || got.Position.X != 10 || got.Position.Y != 10 {
 			t.Errorf("got %+v, want changed seat", got)
 		}
 		if got.TeamID != updatedTeam.ID {
@@ -221,8 +220,8 @@ func TestSeatRepository_BulkSync(t *testing.T) {
 		room := makeRoom(t)
 		team := makeTeam(t)
 
-		seatRepo.Create(ctx, mustNewSeat(t, room.ID, team.ID, "A", 0, 0, 0))
-		seatRepo.Create(ctx, mustNewSeat(t, room.ID, team.ID, "B", 1, 1, 0))
+		seatRepo.Create(ctx, mustNewSeat(t, room.ID, team.ID, "A", 0, 0))
+		seatRepo.Create(ctx, mustNewSeat(t, room.ID, team.ID, "B", 1, 1))
 
 		result, err := seatRepo.BulkSync(ctx, room.ID, []domain.Seat{})
 		if err != nil {

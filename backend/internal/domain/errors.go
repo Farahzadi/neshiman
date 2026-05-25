@@ -15,7 +15,6 @@ var (
 	ErrCrossTeamRequestNotFound = errors.New("cross-team request not found")
 	ErrCrossTeamRequestPending  = errors.New("cross-team request already pending")
 	ErrInvalidGridSize          = errors.New("grid width and height must be positive")
-	ErrInvalidRotation          = errors.New("rotation must be 0, 90, 180, or 270")
 	ErrPositionOutOfBounds      = errors.New("seat position is outside the room grid")
 	ErrInvalidCredentials       = errors.New("invalid username or password")
 	ErrPasswordRequired         = errors.New("password is required")

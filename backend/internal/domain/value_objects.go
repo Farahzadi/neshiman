@@ -5,15 +5,6 @@ type Position struct {
 	Y int
 }
 
-type Rotation int
-
-const (
-	Rotation0   Rotation = 0
-	Rotation90  Rotation = 90
-	Rotation180 Rotation = 180
-	Rotation270 Rotation = 270
-)
-
 type Role string
 
 const (
