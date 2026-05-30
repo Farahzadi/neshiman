@@ -1,7 +1,7 @@
 DB_URL ?= postgres://postgres:postgres@localhost:5432/neshiman?sslmode=disable
 TEST_DB_URL ?= postgres://postgres:postgres@localhost:5432/neshiman_test?sslmode=disable
 
-.PHONY: setup deps db-up db-wait db-migrate db-codegen swagger-gen types-gen dev build test lint clean seed test-db db-test deploy-prod deploy-prod-down deploy-prod-logs
+.PHONY: setup deps db-up db-wait db-migrate db-codegen swagger-gen types-gen dev build test lint clean seed test-db db-test deploy-prod deploy-prod-down deploy-prod-logs deploy-local deploy-local-seed
 
 check-docker:
 	$(call check_tool,docker)
@@ -111,6 +111,41 @@ deploy-prod-down:
 
 deploy-prod-logs:
 	docker compose -f docker-compose.prod.yml logs -f
+
+# --- Deploy to local network machine via SSH ---
+# Override with: make deploy-local DEPLOY_HOST=user@ip DEPLOY_DIR=/path
+DEPLOY_HOST ?= ashpaz@192.168.104.27
+DEPLOY_DIR  ?= ~/neshiman
+REPO_OWNER  ?= neshiman
+
+BACKEND_IMG = ghcr.io/$(REPO_OWNER)/neshiman-backend:latest
+ADMIN_IMG   = ghcr.io/$(REPO_OWNER)/neshiman-admin:latest
+VIEWER_IMG  = ghcr.io/$(REPO_OWNER)/neshiman-viewer:latest
+
+deploy-local: check-docker
+	@test -f .env || { echo "Error: .env file not found. Copy .env.example to .env and fill in your secrets."; exit 1; }
+	@echo "=== Building images locally (linux/amd64) ==="
+	docker build --platform linux/amd64 -f backend/Dockerfile -t $(BACKEND_IMG) backend/
+	docker build --platform linux/amd64 -f apps/admin/Dockerfile -t $(ADMIN_IMG) .
+	docker build --platform linux/amd64 -f apps/viewer/Dockerfile -t $(VIEWER_IMG) .
+	@echo "=== Saving images to tar ==="
+	docker save $(BACKEND_IMG) $(ADMIN_IMG) $(VIEWER_IMG) | gzip > /tmp/neshiman-images.tar.gz
+	@echo "=== Transferring to $(DEPLOY_HOST):$(DEPLOY_DIR) ==="
+	ssh $(DEPLOY_HOST) "mkdir -p $(DEPLOY_DIR)"
+	scp /tmp/neshiman-images.tar.gz $(DEPLOY_HOST):$(DEPLOY_DIR)/
+	scp docker-compose.prod.yml $(DEPLOY_HOST):$(DEPLOY_DIR)/
+	scp .env $(DEPLOY_HOST):$(DEPLOY_DIR)/
+	@echo "=== Loading and starting on remote ==="
+	ssh $(DEPLOY_HOST) "cd $(DEPLOY_DIR) && docker load < neshiman-images.tar.gz && docker compose -f docker-compose.prod.yml up -d && rm neshiman-images.tar.gz"
+	@rm -f /tmp/neshiman-images.tar.gz
+	@echo "=== Deployed to $(DEPLOY_HOST):$(DEPLOY_DIR) ==="
+	@echo "⚠  Run 'make deploy-local-seed' to seed the database with initial data."
+
+deploy-local-seed:
+	@echo "=== Seeding database on $(DEPLOY_HOST) ==="
+	@echo "⚠  This will DESTROY all existing data and recreate from scratch!"
+	ssh $(DEPLOY_HOST) "cd $(DEPLOY_DIR) && docker compose -f docker-compose.prod.yml exec backend /seed"
+	@echo "=== Done. Default password for all users is: password ==="
 
 clean:
 	rm -f backend/server
