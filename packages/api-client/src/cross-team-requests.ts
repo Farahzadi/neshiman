@@ -54,6 +54,20 @@ export function useApproveCrossTeamRequest() {
   }));
 }
 
+export function useMyCrossTeamRequests() {
+  return useQuery(() => ({
+    queryKey: ['cross-team-requests', 'mine'] as const,
+    queryFn: () => apiFetch<CrossTeamRequest[]>('/v1/cross-team-requests/mine'),
+  }));
+}
+
+export function useAllCrossTeamRequests() {
+  return useQuery(() => ({
+    queryKey: ['cross-team-requests', 'all'] as const,
+    queryFn: () => apiFetch<CrossTeamRequest[]>('/v1/cross-team-requests/all'),
+  }));
+}
+
 export function useRejectCrossTeamRequest() {
   const qc = useQueryClient();
   return useMutation(() => ({

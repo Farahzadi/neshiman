@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"neshiman/backend/internal/adapters/http/dto"
+	"neshiman/backend/internal/adapters/http/middleware"
 	"neshiman/backend/internal/application"
 	"neshiman/backend/internal/domain"
 
@@ -139,6 +140,91 @@ func (h *UserHandler) ListByTeam(w http.ResponseWriter, r *http.Request) {
 		responses[i] = dto.UserToResponse(&u)
 	}
 	writeJSON(w, http.StatusOK, responses)
+}
+
+// UpdateUserRole updates a user's role
+// @Summary      Update user role
+// @Tags         Users
+// @Accept       json
+// @Param        id       path      string                    true  "User ID"
+// @Param        request  body      dto.UpdateUserRoleRequest  true  "New role"
+// @Success      200      {object}  dto.UserResponse
+// @Failure      400      {string}  string
+// @Failure      403      {string}  string
+// @Failure      404      {string}  string
+// @Router       /users/{id}/role [put]
+func (h *UserHandler) UpdateRole(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid user id", http.StatusBadRequest)
+		return
+	}
+	var req dto.UpdateUserRoleRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	userID := middleware.UserIDFromContext(r.Context())
+	if err := h.userSvc.UpdateUserRole(r.Context(), userID, id, domain.Role(req.Role)); err != nil {
+		status := http.StatusBadRequest
+		switch err {
+		case domain.ErrForbidden, domain.ErrCannotChangeSuperAdmin, domain.ErrWrongTeam:
+			status = http.StatusForbidden
+		case domain.ErrUserNotFound:
+			status = http.StatusNotFound
+		}
+		http.Error(w, err.Error(), status)
+		return
+	}
+	user, _ := h.userSvc.GetUser(r.Context(), id)
+	writeJSON(w, http.StatusOK, dto.UserToResponse(user))
+}
+
+// UpdateUserTeam updates a user's team assignment (superadmin only)
+// @Summary      Update user team
+// @Tags         Users
+// @Accept       json
+// @Param        id       path      string                    true  "User ID"
+// @Param        request  body      dto.UpdateUserTeamRequest  true  "Team ID (null to remove)"
+// @Success      200      {object}  dto.UserResponse
+// @Failure      400      {string}  string
+// @Failure      403      {string}  string
+// @Failure      404      {string}  string
+// @Router       /users/{id}/team [put]
+func (h *UserHandler) UpdateTeam(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid user id", http.StatusBadRequest)
+		return
+	}
+	var req dto.UpdateUserTeamRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	var teamID *uuid.UUID
+	if req.TeamID != nil {
+		parsed, err := uuid.Parse(*req.TeamID)
+		if err != nil {
+			http.Error(w, "invalid team_id", http.StatusBadRequest)
+			return
+		}
+		teamID = &parsed
+	}
+	userID := middleware.UserIDFromContext(r.Context())
+	if err := h.userSvc.UpdateUserTeam(r.Context(), userID, id, teamID); err != nil {
+		status := http.StatusBadRequest
+		switch err {
+		case domain.ErrForbidden, domain.ErrCannotChangeSuperAdmin:
+			status = http.StatusForbidden
+		case domain.ErrUserNotFound:
+			status = http.StatusNotFound
+		}
+		http.Error(w, err.Error(), status)
+		return
+	}
+	user, _ := h.userSvc.GetUser(r.Context(), id)
+	writeJSON(w, http.StatusOK, dto.UserToResponse(user))
 }
 
 // UpdateUserWeeklyLimit updates a user's weekly reservation limit

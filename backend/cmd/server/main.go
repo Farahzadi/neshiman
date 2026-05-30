@@ -60,8 +60,8 @@ func main() {
 	reservationSvc := application.NewReservationService(reservationRepo, seatRepo, userRepo, txManager)
 	teamSvc := application.NewTeamService(teamRepo)
 	crossTeamRequestRepo := postgres.NewCrossTeamRequestRepository(pool)
-	crossTeamRequestSvc := application.NewCrossTeamRequestService(crossTeamRequestRepo)
-	authSvc := application.NewAuthService(userRepo, cfg.JWTSecret)
+	crossTeamRequestSvc := application.NewCrossTeamRequestService(crossTeamRequestRepo, userRepo, seatRepo, reservationRepo, txManager)
+	authSvc := application.NewAuthService(userRepo, teamRepo, cfg.JWTSecret)
 
 	srv := httpadapter.NewServer(cfg.Port, cfg.JWTSecret, cfg.CORSOrigins, roomSvc, reservationSvc, teamSvc, seatSvc, userSvc, crossTeamRequestSvc, authSvc)
 	fmt.Printf("server listening on :%s\n", cfg.Port)

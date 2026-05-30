@@ -51,6 +51,8 @@ type mockUserRepo struct {
 	listAllFn           func(ctx context.Context) ([]domain.User, error)
 	updateWeeklyLimitFn func(ctx context.Context, id uuid.UUID, limit domain.WeeklyLimit) error
 	updatePasswordFn    func(ctx context.Context, id uuid.UUID, passwordHash string) error
+	updateRoleFn        func(ctx context.Context, id uuid.UUID, role domain.Role) error
+	updateTeamIDFn      func(ctx context.Context, id uuid.UUID, teamID *uuid.UUID) error
 	deleteFn            func(ctx context.Context, id uuid.UUID) error
 }
 
@@ -62,17 +64,21 @@ func (m *mockUserRepo) ListByTeam(ctx context.Context, teamID uuid.UUID) ([]doma
 func (m *mockUserRepo) ListAll(ctx context.Context) ([]domain.User, error) { return m.listAllFn(ctx) }
 func (m *mockUserRepo) UpdateWeeklyLimit(ctx context.Context, id uuid.UUID, limit domain.WeeklyLimit) error { return m.updateWeeklyLimitFn(ctx, id, limit) }
 func (m *mockUserRepo) UpdatePassword(ctx context.Context, id uuid.UUID, passwordHash string) error { return m.updatePasswordFn(ctx, id, passwordHash) }
+func (m *mockUserRepo) UpdateRole(ctx context.Context, id uuid.UUID, role domain.Role) error { return m.updateRoleFn(ctx, id, role) }
+func (m *mockUserRepo) UpdateTeamID(ctx context.Context, id uuid.UUID, teamID *uuid.UUID) error { return m.updateTeamIDFn(ctx, id, teamID) }
 func (m *mockUserRepo) Delete(ctx context.Context, id uuid.UUID) error { return m.deleteFn(ctx, id) }
 
 type mockReservationRepo struct {
-	createFn           func(ctx context.Context, r *domain.Reservation) error
-	getByIDFn          func(ctx context.Context, id uuid.UUID) (*domain.Reservation, error)
-	getBySeatAndDateFn   func(ctx context.Context, seatID uuid.UUID, date domain.Date) (*domain.Reservation, error)
-	listByDateFn       func(ctx context.Context, date domain.Date) ([]domain.Reservation, error)
-	listByUserAndDateFn func(ctx context.Context, userID uuid.UUID, date domain.Date) ([]domain.Reservation, error)
-	listByUserAndWeekFn func(ctx context.Context, userID uuid.UUID, start, end domain.Date) ([]domain.Reservation, error)
-	countByUserInWeekFn func(ctx context.Context, userID uuid.UUID, start, end domain.Date) (int, error)
-	deleteFn           func(ctx context.Context, id uuid.UUID) error
+	createFn                    func(ctx context.Context, r *domain.Reservation) error
+	getByIDFn                   func(ctx context.Context, id uuid.UUID) (*domain.Reservation, error)
+	getBySeatAndDateFn          func(ctx context.Context, seatID uuid.UUID, date domain.Date) (*domain.Reservation, error)
+	listByDateFn                func(ctx context.Context, date domain.Date) ([]domain.Reservation, error)
+	listByUserAndDateFn         func(ctx context.Context, userID uuid.UUID, date domain.Date) ([]domain.Reservation, error)
+	listByUserAndWeekFn         func(ctx context.Context, userID uuid.UUID, start, end domain.Date) ([]domain.Reservation, error)
+	countByUserInWeekFn         func(ctx context.Context, userID uuid.UUID, start, end domain.Date) (int, error)
+	listByRoomAndDateFn         func(ctx context.Context, roomID uuid.UUID, date domain.Date) ([]domain.Reservation, error)
+	listByRoomAndDateWithDetailsFn func(ctx context.Context, roomID uuid.UUID, date domain.Date) ([]ports.ReservationWithDetails, error)
+	deleteFn                    func(ctx context.Context, id uuid.UUID) error
 }
 
 func (m *mockReservationRepo) Create(ctx context.Context, r *domain.Reservation) error { return m.createFn(ctx, r) }
@@ -82,6 +88,8 @@ func (m *mockReservationRepo) ListByDate(ctx context.Context, date domain.Date) 
 func (m *mockReservationRepo) ListByUserAndDate(ctx context.Context, userID uuid.UUID, date domain.Date) ([]domain.Reservation, error) { return m.listByUserAndDateFn(ctx, userID, date) }
 func (m *mockReservationRepo) ListByUserAndWeek(ctx context.Context, userID uuid.UUID, start, end domain.Date) ([]domain.Reservation, error) { return m.listByUserAndWeekFn(ctx, userID, start, end) }
 func (m *mockReservationRepo) CountByUserInWeek(ctx context.Context, userID uuid.UUID, start, end domain.Date) (int, error) { return m.countByUserInWeekFn(ctx, userID, start, end) }
+func (m *mockReservationRepo) ListByRoomAndDate(ctx context.Context, roomID uuid.UUID, date domain.Date) ([]domain.Reservation, error) { return m.listByRoomAndDateFn(ctx, roomID, date) }
+func (m *mockReservationRepo) ListByRoomAndDateWithDetails(ctx context.Context, roomID uuid.UUID, date domain.Date) ([]ports.ReservationWithDetails, error) { return m.listByRoomAndDateWithDetailsFn(ctx, roomID, date) }
 func (m *mockReservationRepo) Delete(ctx context.Context, id uuid.UUID) error { return m.deleteFn(ctx, id) }
 
 type mockTeamRepo struct {
@@ -97,17 +105,21 @@ func (m *mockTeamRepo) List(ctx context.Context) ([]domain.Team, error) { return
 func (m *mockTeamRepo) Delete(ctx context.Context, id uuid.UUID) error { return m.deleteFn(ctx, id) }
 
 type mockCrossTeamRequestRepo struct {
-	createFn         func(ctx context.Context, r *domain.CrossTeamRequest) error
-	getByIDFn        func(ctx context.Context, id uuid.UUID) (*domain.CrossTeamRequest, error)
-	listByStatusFn   func(ctx context.Context, status domain.RequestStatus) ([]domain.CrossTeamRequest, error)
-	listPendingByTeamFn func(ctx context.Context, teamID uuid.UUID) ([]domain.CrossTeamRequest, error)
-	updateStatusFn   func(ctx context.Context, id uuid.UUID, status domain.RequestStatus) error
+	createFn             func(ctx context.Context, r *domain.CrossTeamRequest) error
+	getByIDFn            func(ctx context.Context, id uuid.UUID) (*domain.CrossTeamRequest, error)
+	listByStatusFn       func(ctx context.Context, status domain.RequestStatus) ([]domain.CrossTeamRequest, error)
+	listPendingByTeamFn  func(ctx context.Context, teamID uuid.UUID) ([]domain.CrossTeamRequest, error)
+	listByUserFn         func(ctx context.Context, userID uuid.UUID) ([]domain.CrossTeamRequest, error)
+	listAllFn            func(ctx context.Context) ([]domain.CrossTeamRequest, error)
+	updateStatusFn       func(ctx context.Context, id uuid.UUID, status domain.RequestStatus) error
 }
 
 func (m *mockCrossTeamRequestRepo) Create(ctx context.Context, r *domain.CrossTeamRequest) error { return m.createFn(ctx, r) }
 func (m *mockCrossTeamRequestRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.CrossTeamRequest, error) { return m.getByIDFn(ctx, id) }
 func (m *mockCrossTeamRequestRepo) ListByStatus(ctx context.Context, status domain.RequestStatus) ([]domain.CrossTeamRequest, error) { return m.listByStatusFn(ctx, status) }
 func (m *mockCrossTeamRequestRepo) ListPendingByTeam(ctx context.Context, teamID uuid.UUID) ([]domain.CrossTeamRequest, error) { return m.listPendingByTeamFn(ctx, teamID) }
+func (m *mockCrossTeamRequestRepo) ListByUser(ctx context.Context, userID uuid.UUID) ([]domain.CrossTeamRequest, error) { return m.listByUserFn(ctx, userID) }
+func (m *mockCrossTeamRequestRepo) ListAll(ctx context.Context) ([]domain.CrossTeamRequest, error) { return m.listAllFn(ctx) }
 func (m *mockCrossTeamRequestRepo) UpdateStatus(ctx context.Context, id uuid.UUID, status domain.RequestStatus) error { return m.updateStatusFn(ctx, id, status) }
 
 type mockTxManager struct {

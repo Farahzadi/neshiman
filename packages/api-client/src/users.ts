@@ -63,3 +63,44 @@ export function useUpdateWeeklyLimit() {
     },
   }));
 }
+
+type UpdateUserRole = definitions['dto.UpdateUserRoleRequest'];
+type UpdateUserTeam = definitions['dto.UpdateUserTeamRequest'];
+
+export function useUpdateUserRole() {
+  const qc = useQueryClient();
+  return useMutation(() => ({
+    mutationFn: ({ id, data }: { id: string; data: UpdateUserRole }) =>
+      apiFetch<User>(`/v1/users/${id}/role`, { method: 'PUT', body: JSON.stringify(data) }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: queryKeys.users.detail(vars.id) });
+      qc.invalidateQueries({ queryKey: queryKeys.users.all });
+    },
+  }));
+}
+
+export function useUpdateUserTeam() {
+  const qc = useQueryClient();
+  return useMutation(() => ({
+    mutationFn: ({ id, data }: { id: string; data: UpdateUserTeam }) =>
+      apiFetch<User>(`/v1/users/${id}/team`, { method: 'PUT', body: JSON.stringify(data) }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: queryKeys.users.detail(vars.id) });
+      qc.invalidateQueries({ queryKey: queryKeys.users.all });
+    },
+  }));
+}
+
+export function useSetPassword() {
+  const qc = useQueryClient();
+  return useMutation(() => ({
+    mutationFn: ({ id, password }: { id: string; password: string }) =>
+      apiFetch<void>(`/v1/users/${id}/password`, {
+        method: 'PUT',
+        body: JSON.stringify({ password }),
+      }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: queryKeys.users.detail(vars.id) });
+    },
+  }));
+}

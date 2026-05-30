@@ -14,11 +14,12 @@ import (
 
 type AuthService struct {
 	users     ports.UserRepository
+	teams     ports.TeamRepository
 	jwtSecret string
 }
 
-func NewAuthService(users ports.UserRepository, jwtSecret string) *AuthService {
-	return &AuthService{users: users, jwtSecret: jwtSecret}
+func NewAuthService(users ports.UserRepository, teams ports.TeamRepository, jwtSecret string) *AuthService {
+	return &AuthService{users: users, teams: teams, jwtSecret: jwtSecret}
 }
 
 type LoginResult struct {
@@ -53,13 +54,44 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (*Lo
 	return &LoginResult{Token: signed, User: user}, nil
 }
 
-func (s *AuthService) SetPassword(ctx context.Context, userID uuid.UUID, password string) error {
+func (s *AuthService) SetPassword(ctx context.Context, callerID, targetID uuid.UUID, password string) error {
 	if password == "" {
 		return domain.ErrPasswordRequired
 	}
+
+	// Self-service: anyone can set their own password
+	if callerID == targetID {
+		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		return s.users.UpdatePassword(ctx, targetID, string(hash))
+	}
+
+	// Admin override: team_admin+ can set passwords
+	caller, err := s.users.GetByID(ctx, callerID)
+	if err != nil {
+		return err
+	}
+	if !caller.IsSuperAdmin() && !caller.IsTeamAdmin() {
+		return domain.ErrForbidden
+	}
+
+	target, err := s.users.GetByID(ctx, targetID)
+	if err != nil {
+		return err
+	}
+
+	// team_admin can only set passwords for their own team members
+	if caller.IsTeamAdmin() {
+		if target.TeamID == nil || caller.TeamID == nil || *target.TeamID != *caller.TeamID {
+			return domain.ErrWrongTeam
+		}
+	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
-	return s.users.UpdatePassword(ctx, userID, string(hash))
+	return s.users.UpdatePassword(ctx, targetID, string(hash))
 }

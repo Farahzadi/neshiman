@@ -71,3 +71,17 @@ type LoginRequest struct {
 type SetPasswordRequest struct {
 	Password string `json:"password"`
 }
+
+type UpdateUserRoleRequest struct {
+	Role string `json:"role"`
+}
+
+type UpdateUserTeamRequest struct {
+	TeamID *string `json:"team_id"`
+}
+
+type AdminCreateReservationRequest struct {
+	UserID string `json:"user_id"`
+	SeatID string `json:"seat_id"`
+	Date   string `json:"date"`
+}

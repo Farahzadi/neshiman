@@ -1,5 +1,14 @@
 basePath: /api/v1
 definitions:
+  dto.AdminCreateReservationRequest:
+    properties:
+      date:
+        type: string
+      seat_id:
+        type: string
+      user_id:
+        type: string
+    type: object
   dto.BulkSeatItem:
     properties:
       id:
@@ -135,6 +144,21 @@ definitions:
       user_id:
         type: string
     type: object
+  dto.ReservationWithUserResponse:
+    properties:
+      date:
+        type: string
+      id:
+        type: string
+      seat_id:
+        type: string
+      seat_label:
+        type: string
+      user_id:
+        type: string
+      user_name:
+        type: string
+    type: object
   dto.RoomResponse:
     properties:
       created_at:
@@ -184,6 +208,16 @@ definitions:
       grid_width:
         type: integer
       name:
+        type: string
+    type: object
+  dto.UpdateUserRoleRequest:
+    properties:
+      role:
+        type: string
+    type: object
+  dto.UpdateUserTeamRequest:
+    properties:
+      team_id:
         type: string
     type: object
   dto.UpdateWeeklyLimitRequest:
@@ -331,6 +365,10 @@ paths:
           description: Bad Request
           schema:
             type: string
+        "403":
+          description: Forbidden
+          schema:
+            type: string
       summary: Approve a cross-team request
       tags:
       - CrossTeamRequests
@@ -353,7 +391,39 @@ paths:
           description: Bad Request
           schema:
             type: string
+        "403":
+          description: Forbidden
+          schema:
+            type: string
       summary: Reject a cross-team request
+      tags:
+      - CrossTeamRequests
+  /cross-team-requests/all:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.CrossTeamRequestResponse'
+            type: array
+      summary: List all cross-team requests
+      tags:
+      - CrossTeamRequests
+  /cross-team-requests/mine:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.CrossTeamRequestResponse'
+            type: array
+      summary: List my cross-team requests
       tags:
       - CrossTeamRequests
   /cross-team-requests/pending-by-team:
@@ -473,6 +543,71 @@ paths:
           schema:
             type: string
       summary: Cancel a reservation
+      tags:
+      - Reservations
+  /reservations/admin:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Admin reservation details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AdminCreateReservationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.ReservationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "409":
+          description: Conflict
+          schema:
+            type: string
+      summary: Admin create reservation
+      tags:
+      - Reservations
+  /reservations/by-room:
+    get:
+      parameters:
+      - description: Room ID
+        in: query
+        name: room_id
+        required: true
+        type: string
+      - description: Date in YYYY-MM-DD format (defaults to today)
+        in: query
+        name: date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ReservationWithUserResponse'
+            type: array
+      summary: List reservations by room and date
       tags:
       - Reservations
   /reservations/week:
@@ -946,6 +1081,78 @@ paths:
       summary: Set password
       tags:
       - Auth
+  /users/{id}/role:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New role
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateUserRoleRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      summary: Update user role
+      tags:
+      - Users
+  /users/{id}/team:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Team ID (null to remove)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateUserTeamRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      summary: Update user team
+      tags:
+      - Users
   /users/{id}/weekly-limit:
     put:
       consumes:

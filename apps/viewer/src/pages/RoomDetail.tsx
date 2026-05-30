@@ -204,7 +204,7 @@ const RoomDetail: Component = () => {
           </div>
         </div>
 
-        <div class="overflow-auto bg-white flex items-center justify-center p-8" style="min-height: 400px">
+        <div class="overflow-auto bg-white flex items-center justify-center p-8" style={{ 'min-height': '400px' }}>
           <Show when={room.data && seats.data} fallback={
             <div class="flex items-center gap-2 text-gray-400">
               <div class="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -227,19 +227,14 @@ const RoomDetail: Component = () => {
                   const ownTeam = isOwnTeam(seat);
 
                   let stateClass: string;
-                  let stateLabel: string;
                   if (isReservedByMe) {
                     stateClass = 'bg-blue-200 border-blue-400 ring-2 ring-blue-300';
-                    stateLabel = 'Your seat';
                   } else if (isReserved) {
                     stateClass = 'bg-gray-100 border-gray-300 opacity-60';
-                    stateLabel = 'Reserved';
                   } else if (!ownTeam && currentUserId()) {
                     stateClass = `${colors.cellBg} ${colors.border} opacity-70`;
-                    stateLabel = 'Request access';
                   } else {
                     stateClass = `${colors.cellBg} ${colors.border} cursor-pointer hover:ring-2 hover:ring-green-400`;
-                    stateLabel = 'Available';
                   }
 
                   return (
@@ -316,7 +311,8 @@ const RoomDetail: Component = () => {
                   <button
                     onClick={() => {
                       if (isReservedByMe) {
-                        cancelReservation.mutateAsync(reservationBySeat().get(seat().id!)?.id!).then(() => {
+                        const res = reservationBySeat().get(seat().id!);
+                        cancelReservation.mutateAsync(res?.id ?? '').then(() => {
                           setShowConfirm(null);
                           setSuccessMsg('Reservation cancelled!');
                           setTimeout(() => setSuccessMsg(''), 3000);

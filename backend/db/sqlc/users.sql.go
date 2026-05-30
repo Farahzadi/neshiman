@@ -212,6 +212,36 @@ func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPassword
 	return err
 }
 
+const updateUserRole = `-- name: UpdateUserRole :exec
+UPDATE users SET role = $2, updated_at = now()
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdateUserRoleParams struct {
+	ID   uuid.UUID `db:"id" json:"id"`
+	Role string    `db:"role" json:"role"`
+}
+
+func (q *Queries) UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error {
+	_, err := q.db.Exec(ctx, updateUserRole, arg.ID, arg.Role)
+	return err
+}
+
+const updateUserTeamID = `-- name: UpdateUserTeamID :exec
+UPDATE users SET team_id = $2, updated_at = now()
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type UpdateUserTeamIDParams struct {
+	ID     uuid.UUID   `db:"id" json:"id"`
+	TeamID pgtype.UUID `db:"team_id" json:"team_id"`
+}
+
+func (q *Queries) UpdateUserTeamID(ctx context.Context, arg UpdateUserTeamIDParams) error {
+	_, err := q.db.Exec(ctx, updateUserTeamID, arg.ID, arg.TeamID)
+	return err
+}
+
 const updateUserWeeklyLimit = `-- name: UpdateUserWeeklyLimit :one
 UPDATE users SET weekly_limit = $2, updated_at = now()
 WHERE id = $1 AND deleted_at IS NULL

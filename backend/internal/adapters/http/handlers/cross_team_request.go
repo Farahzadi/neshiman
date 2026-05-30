@@ -129,6 +129,49 @@ func (h *CrossTeamRequestHandler) ListPendingByTeam(w http.ResponseWriter, r *ht
 	writeJSON(w, http.StatusOK, responses)
 }
 
+// ListMyCrossTeamRequests lists the current user's own requests
+// @Summary      List my cross-team requests
+// @Tags         CrossTeamRequests
+// @Produce      json
+// @Success      200  {array}   dto.CrossTeamRequestResponse
+// @Router       /cross-team-requests/mine [get]
+func (h *CrossTeamRequestHandler) ListMine(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserIDFromContext(r.Context())
+	if userID == uuid.Nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	requests, err := h.svc.ListByUser(r.Context(), userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	responses := make([]dto.CrossTeamRequestResponse, len(requests))
+	for i, req := range requests {
+		responses[i] = dto.CrossTeamRequestToResponse(&req)
+	}
+	writeJSON(w, http.StatusOK, responses)
+}
+
+// ListAllCrossTeamRequests lists all requests (superadmin only)
+// @Summary      List all cross-team requests
+// @Tags         CrossTeamRequests
+// @Produce      json
+// @Success      200  {array}   dto.CrossTeamRequestResponse
+// @Router       /cross-team-requests/all [get]
+func (h *CrossTeamRequestHandler) ListAll(w http.ResponseWriter, r *http.Request) {
+	requests, err := h.svc.ListAll(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	responses := make([]dto.CrossTeamRequestResponse, len(requests))
+	for i, req := range requests {
+		responses[i] = dto.CrossTeamRequestToResponse(&req)
+	}
+	writeJSON(w, http.StatusOK, responses)
+}
+
 // ApproveCrossTeamRequest approves a pending request
 // @Summary      Approve a cross-team request
 // @Tags         CrossTeamRequests
@@ -136,6 +179,7 @@ func (h *CrossTeamRequestHandler) ListPendingByTeam(w http.ResponseWriter, r *ht
 // @Param        id   path      string  true  "Request ID"
 // @Success      200  {object}  dto.CrossTeamRequestResponse
 // @Failure      400  {string}  string
+// @Failure      403  {string}  string
 // @Router       /cross-team-requests/{id}/approve [put]
 func (h *CrossTeamRequestHandler) Approve(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
@@ -143,9 +187,14 @@ func (h *CrossTeamRequestHandler) Approve(w http.ResponseWriter, r *http.Request
 		http.Error(w, "invalid request id", http.StatusBadRequest)
 		return
 	}
-	request, err := h.svc.ApproveRequest(r.Context(), id)
+	userID := middleware.UserIDFromContext(r.Context())
+	request, err := h.svc.ApproveRequest(r.Context(), id, userID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		status := http.StatusBadRequest
+		if err == domain.ErrForbidden {
+			status = http.StatusForbidden
+		}
+		http.Error(w, err.Error(), status)
 		return
 	}
 	writeJSON(w, http.StatusOK, dto.CrossTeamRequestToResponse(request))
@@ -158,6 +207,7 @@ func (h *CrossTeamRequestHandler) Approve(w http.ResponseWriter, r *http.Request
 // @Param        id   path      string  true  "Request ID"
 // @Success      200  {object}  dto.CrossTeamRequestResponse
 // @Failure      400  {string}  string
+// @Failure      403  {string}  string
 // @Router       /cross-team-requests/{id}/reject [put]
 func (h *CrossTeamRequestHandler) Reject(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
@@ -165,9 +215,14 @@ func (h *CrossTeamRequestHandler) Reject(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "invalid request id", http.StatusBadRequest)
 		return
 	}
-	request, err := h.svc.RejectRequest(r.Context(), id)
+	userID := middleware.UserIDFromContext(r.Context())
+	request, err := h.svc.RejectRequest(r.Context(), id, userID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		status := http.StatusBadRequest
+		if err == domain.ErrForbidden {
+			status = http.StatusForbidden
+		}
+		http.Error(w, err.Error(), status)
 		return
 	}
 	writeJSON(w, http.StatusOK, dto.CrossTeamRequestToResponse(request))

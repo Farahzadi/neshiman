@@ -120,6 +120,24 @@ func (r *UserRepository) UpdatePassword(ctx context.Context, userID uuid.UUID, p
 	})
 }
 
+func (r *UserRepository) UpdateRole(ctx context.Context, userID uuid.UUID, role domain.Role) error {
+	return r.q.UpdateUserRole(ctx, sqlc.UpdateUserRoleParams{
+		ID:   userID,
+		Role: string(role),
+	})
+}
+
+func (r *UserRepository) UpdateTeamID(ctx context.Context, userID uuid.UUID, teamID *uuid.UUID) error {
+	t := pgtype.UUID{Valid: false}
+	if teamID != nil {
+		t = pgtype.UUID{Bytes: *teamID, Valid: true}
+	}
+	return r.q.UpdateUserTeamID(ctx, sqlc.UpdateUserTeamIDParams{
+		ID:     userID,
+		TeamID: t,
+	})
+}
+
 func (r *UserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.q.SoftDeleteUser(ctx, id)
 }

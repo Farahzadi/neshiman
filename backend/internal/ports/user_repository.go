@@ -16,5 +16,7 @@ type UserRepository interface {
 	ListAll(ctx context.Context) ([]domain.User, error)
 	UpdateWeeklyLimit(ctx context.Context, userID uuid.UUID, limit domain.WeeklyLimit) error
 	UpdatePassword(ctx context.Context, userID uuid.UUID, passwordHash string) error
+	UpdateRole(ctx context.Context, userID uuid.UUID, role domain.Role) error
+	UpdateTeamID(ctx context.Context, userID uuid.UUID, teamID *uuid.UUID) error
 	Delete(ctx context.Context, id uuid.UUID) error
 }

@@ -60,7 +60,7 @@ func newRouter(
 				r.Delete("/{id}", seatHandler.Delete)
 			})
 
-			r.Route("/teams", func(r chi.Router) {
+					r.Route("/teams", func(r chi.Router) {
 				r.Post("/", teamHandler.Create)
 				r.Get("/", teamHandler.List)
 				r.Get("/{id}", teamHandler.GetByID)
@@ -77,23 +77,38 @@ func newRouter(
 					r.Use(middleware.RequireRole("team_admin"))
 					r.Post("/", userHandler.Create)
 					r.Delete("/{id}", userHandler.Delete)
+					r.Put("/{id}/role", userHandler.UpdateRole)
+				})
+				r.Group(func(r chi.Router) {
+					r.Use(middleware.RequireRole("superadmin"))
+					r.Put("/{id}/team", userHandler.UpdateTeam)
 				})
 			})
 
 			r.Route("/cross-team-requests", func(r chi.Router) {
 				r.Post("/", crossTeamRequestHandler.Create)
 				r.Get("/", crossTeamRequestHandler.ListByStatus)
+				r.Get("/mine", crossTeamRequestHandler.ListMine)
 				r.Get("/pending-by-team", crossTeamRequestHandler.ListPendingByTeam)
 				r.Get("/{id}", crossTeamRequestHandler.GetByID)
 				r.Put("/{id}/approve", crossTeamRequestHandler.Approve)
 				r.Put("/{id}/reject", crossTeamRequestHandler.Reject)
+				r.Group(func(r chi.Router) {
+					r.Use(middleware.RequireRole("team_admin"))
+					r.Get("/all", crossTeamRequestHandler.ListAll)
+				})
 			})
 
 			r.Route("/reservations", func(r chi.Router) {
 				r.Get("/", reservationHandler.List)
 				r.Post("/", reservationHandler.Create)
 				r.Get("/week", reservationHandler.GetWeek)
+				r.Get("/by-room", reservationHandler.ListByRoomAndDate)
 				r.Delete("/{id}", reservationHandler.Cancel)
+				r.Group(func(r chi.Router) {
+					r.Use(middleware.RequireRole("team_admin"))
+					r.Post("/admin", reservationHandler.AdminCreate)
+				})
 			})
 		})
 	})

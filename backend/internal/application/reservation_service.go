@@ -46,6 +46,42 @@ func dateFromTime(t time.Time) domain.Date {
 }
 
 func (s *ReservationService) ReserveSeat(ctx context.Context, userID, seatID uuid.UUID, date domain.Date) (*domain.Reservation, error) {
+	return s.reserveSeat(ctx, userID, seatID, date, false)
+}
+
+// AdminReserveSeat creates a reservation on behalf of another user.
+// callerID is the admin, targetUserID is the person getting the seat.
+func (s *ReservationService) AdminReserveSeat(ctx context.Context, callerID, targetUserID, seatID uuid.UUID, date domain.Date) (*domain.Reservation, error) {
+	caller, err := s.users.GetByID(ctx, callerID)
+	if err != nil {
+		return nil, err
+	}
+	if !caller.IsSuperAdmin() && !caller.IsTeamAdmin() {
+		return nil, domain.ErrForbidden
+	}
+
+	target, err := s.users.GetByID(ctx, targetUserID)
+	if err != nil {
+		return nil, domain.ErrUserNotFound
+	}
+
+	// team_admin can only reserve for their own team
+	if caller.IsTeamAdmin() {
+		if target.TeamID == nil || caller.TeamID == nil || *target.TeamID != *caller.TeamID {
+			return nil, domain.ErrWrongTeam
+		}
+	}
+
+	return s.reserveSeat(ctx, targetUserID, seatID, date, true)
+}
+
+func (s *ReservationService) reserveSeat(ctx context.Context, userID, seatID uuid.UUID, date domain.Date, allowCrossTeam bool) (*domain.Reservation, error) {
+	// Validate date is not in the past
+	today := dateFromTime(time.Now())
+	if date.Year < today.Year || (date.Year == today.Year && date.Month < today.Month) || (date.Year == today.Year && date.Month == today.Month && date.Day < today.Day) {
+		return nil, domain.ErrPastDate
+	}
+
 	user, err := s.users.GetByID(ctx, userID)
 	if err != nil {
 		return nil, domain.ErrUserNotFound
@@ -62,10 +98,11 @@ func (s *ReservationService) ReserveSeat(ctx context.Context, userID, seatID uui
 		return nil, domain.ErrSeatAlreadyReserved
 	}
 
-	// Check cross-team: if seat is owned by a different team, verify approval
+	// Check cross-team: if seat is owned by a different team
 	if user.TeamID != nil && seat.TeamID != *user.TeamID {
-		// cross-team reservation requires approved request
-		return nil, domain.ErrForbidden
+		if !allowCrossTeam {
+			return nil, domain.ErrForbidden
+		}
 	}
 
 	// Check weekly limit
@@ -94,10 +131,40 @@ func (s *ReservationService) CancelReservation(ctx context.Context, reservationI
 	if err != nil {
 		return domain.ErrReservationNotFound
 	}
-	if reservation.UserID != userID {
-		return domain.ErrForbidden
+
+	// Self-cancel: anyone can cancel their own
+	if reservation.UserID == userID {
+		return s.reservations.Delete(ctx, reservationID)
 	}
-	return s.reservations.Delete(ctx, reservationID)
+
+	// Admin cancel: check permissions
+	caller, err := s.users.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if caller.IsSuperAdmin() {
+		return s.reservations.Delete(ctx, reservationID)
+	}
+	if caller.IsTeamAdmin() {
+		// Find the reservation's user to check team
+		reservationUser, err := s.users.GetByID(ctx, reservation.UserID)
+		if err != nil {
+			return err
+		}
+		if reservationUser.TeamID != nil && caller.TeamID != nil && *reservationUser.TeamID == *caller.TeamID {
+			return s.reservations.Delete(ctx, reservationID)
+		}
+	}
+
+	return domain.ErrForbidden
+}
+
+func (s *ReservationService) ListByRoomAndDate(ctx context.Context, roomID uuid.UUID, date domain.Date) ([]domain.Reservation, error) {
+	return s.reservations.ListByRoomAndDate(ctx, roomID, date)
+}
+
+func (s *ReservationService) ListByRoomAndDateWithDetails(ctx context.Context, roomID uuid.UUID, date domain.Date) ([]ports.ReservationWithDetails, error) {
+	return s.reservations.ListByRoomAndDateWithDetails(ctx, roomID, date)
 }
 
 func (s *ReservationService) GetUserWeekReservations(ctx context.Context, userID uuid.UUID, date domain.Date) ([]domain.Reservation, error) {

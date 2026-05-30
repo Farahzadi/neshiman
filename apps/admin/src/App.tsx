@@ -11,6 +11,7 @@ import RoomEditor from './pages/RoomEditor';
 import Teams from './pages/Teams';
 import Users from './pages/Users';
 import CrossTeamRequests from './pages/CrossTeamRequests';
+import Reservations from './pages/Reservations';
 import Toast from './components/Toast';
 
 const Devtools = lazy(() => import('./devtools'));
@@ -41,6 +42,7 @@ const App: Component = () => {
         <Route path="/teams" component={() => <ProtectedRoute><Teams /></ProtectedRoute>} />
         <Route path="/users" component={() => <ProtectedRoute><Users /></ProtectedRoute>} />
         <Route path="/cross-team-requests" component={() => <ProtectedRoute><CrossTeamRequests /></ProtectedRoute>} />
+        <Route path="/reservations" component={() => <ProtectedRoute><Reservations /></ProtectedRoute>} />
       </Router>
       <Toast />
       {import.meta.env.DEV && <Devtools />}

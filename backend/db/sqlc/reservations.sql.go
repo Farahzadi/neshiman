@@ -132,6 +132,95 @@ func (q *Queries) ListReservationsByDate(ctx context.Context, date pgtype.Date) 
 	return items, nil
 }
 
+const listReservationsByRoomAndDate = `-- name: ListReservationsByRoomAndDate :many
+SELECT r.id, r.user_id, r.seat_id, r.date, r.created_at, r.deleted_at FROM reservations r
+JOIN seats s ON r.seat_id = s.id
+WHERE s.room_id = $1 AND r.date = $2 AND r.deleted_at IS NULL
+ORDER BY r.created_at
+`
+
+type ListReservationsByRoomAndDateParams struct {
+	RoomID uuid.UUID   `db:"room_id" json:"room_id"`
+	Date   pgtype.Date `db:"date" json:"date"`
+}
+
+func (q *Queries) ListReservationsByRoomAndDate(ctx context.Context, arg ListReservationsByRoomAndDateParams) ([]Reservation, error) {
+	rows, err := q.db.Query(ctx, listReservationsByRoomAndDate, arg.RoomID, arg.Date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Reservation
+	for rows.Next() {
+		var i Reservation
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.SeatID,
+			&i.Date,
+			&i.CreatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listReservationsByRoomAndDateWithDetails = `-- name: ListReservationsByRoomAndDateWithDetails :many
+SELECT r.id, r.user_id, u.name as user_name, r.seat_id, s.label as seat_label, r.date
+FROM reservations r
+JOIN seats s ON r.seat_id = s.id
+JOIN users u ON r.user_id = u.id
+WHERE s.room_id = $1 AND r.date = $2 AND r.deleted_at IS NULL
+ORDER BY r.created_at
+`
+
+type ListReservationsByRoomAndDateWithDetailsParams struct {
+	RoomID uuid.UUID   `db:"room_id" json:"room_id"`
+	Date   pgtype.Date `db:"date" json:"date"`
+}
+
+type ListReservationsByRoomAndDateWithDetailsRow struct {
+	ID        uuid.UUID   `db:"id" json:"id"`
+	UserID    uuid.UUID   `db:"user_id" json:"user_id"`
+	UserName  string      `db:"user_name" json:"user_name"`
+	SeatID    uuid.UUID   `db:"seat_id" json:"seat_id"`
+	SeatLabel string      `db:"seat_label" json:"seat_label"`
+	Date      pgtype.Date `db:"date" json:"date"`
+}
+
+func (q *Queries) ListReservationsByRoomAndDateWithDetails(ctx context.Context, arg ListReservationsByRoomAndDateWithDetailsParams) ([]ListReservationsByRoomAndDateWithDetailsRow, error) {
+	rows, err := q.db.Query(ctx, listReservationsByRoomAndDateWithDetails, arg.RoomID, arg.Date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListReservationsByRoomAndDateWithDetailsRow
+	for rows.Next() {
+		var i ListReservationsByRoomAndDateWithDetailsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.UserName,
+			&i.SeatID,
+			&i.SeatLabel,
+			&i.Date,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listReservationsByUserAndDate = `-- name: ListReservationsByUserAndDate :many
 SELECT id, user_id, seat_id, date, created_at, deleted_at FROM reservations WHERE user_id = $1 AND date = $2 AND deleted_at IS NULL ORDER BY created_at
 `

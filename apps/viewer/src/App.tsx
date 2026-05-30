@@ -1,4 +1,4 @@
-import type { Component, ParentProps } from 'solid-js';
+import type { Component } from 'solid-js';
 import { lazy } from 'solid-js';
 import { Router, Route, Navigate } from '@solidjs/router';
 import type { RouteSectionProps } from '@solidjs/router';
@@ -6,6 +6,7 @@ import Providers from './providers';
 import Layout from './components/layout/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import WeeklyCalendar from './pages/WeeklyCalendar';
 import Rooms from './pages/Rooms';
 import RoomDetail from './pages/RoomDetail';
 import Reservations from './pages/Reservations';
@@ -33,7 +34,8 @@ const App: Component = () => {
     <Providers>
       <Router root={RootLayout}>
         <Route path="/login" component={Login} />
-        <Route path="/" component={() => <ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/" component={() => <ProtectedRoute><WeeklyCalendar /></ProtectedRoute>} />
+        <Route path="/overview" component={() => <ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/rooms" component={() => <ProtectedRoute><Rooms /></ProtectedRoute>} />
         <Route path="/rooms/:id" component={() => <ProtectedRoute><RoomDetail /></ProtectedRoute>} />
         <Route path="/reservations" component={() => <ProtectedRoute><Reservations /></ProtectedRoute>} />

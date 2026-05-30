@@ -9,6 +9,7 @@ import (
 	"neshiman/backend/internal/application"
 	"neshiman/backend/internal/domain"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -64,9 +65,15 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Failure      401     {string}  string
 // @Router       /users/{id}/password [put]
 func (h *AuthHandler) SetPassword(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.UserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	callerID := middleware.UserIDFromContext(r.Context())
+	if callerID == uuid.Nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	targetID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid user id", http.StatusBadRequest)
 		return
 	}
 
@@ -76,12 +83,15 @@ func (h *AuthHandler) SetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.authSvc.SetPassword(r.Context(), userID, req.Password); err != nil {
-		if err == domain.ErrPasswordRequired {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
+	if err := h.authSvc.SetPassword(r.Context(), callerID, targetID, req.Password); err != nil {
+		status := http.StatusInternalServerError
+		switch err {
+		case domain.ErrPasswordRequired:
+			status = http.StatusBadRequest
+		case domain.ErrForbidden, domain.ErrWrongTeam:
+			status = http.StatusForbidden
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), status)
 		return
 	}
 

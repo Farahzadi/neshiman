@@ -13,4 +13,6 @@ type CrossTeamRequestRepository interface {
 	ListByStatus(ctx context.Context, status domain.RequestStatus) ([]domain.CrossTeamRequest, error)
 	ListPendingByTeam(ctx context.Context, teamID uuid.UUID) ([]domain.CrossTeamRequest, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status domain.RequestStatus) error
+	ListByUser(ctx context.Context, userID uuid.UUID) ([]domain.CrossTeamRequest, error)
+	ListAll(ctx context.Context) ([]domain.CrossTeamRequest, error)
 }

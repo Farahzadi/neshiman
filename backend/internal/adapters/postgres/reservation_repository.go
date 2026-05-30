@@ -148,6 +148,48 @@ func (r *ReservationRepository) CountByUserInWeek(ctx context.Context, userID uu
 	return int(count), nil
 }
 
+func (r *ReservationRepository) ListByRoomAndDateWithDetails(ctx context.Context, roomID uuid.UUID, date domain.Date) ([]ports.ReservationWithDetails, error) {
+	results, err := r.q.ListReservationsByRoomAndDateWithDetails(ctx, sqlc.ListReservationsByRoomAndDateWithDetailsParams{
+		RoomID: roomID,
+		Date:   domainDateToPgDate(date),
+	})
+	if err != nil {
+		return nil, err
+	}
+	details := make([]ports.ReservationWithDetails, len(results))
+	for i, row := range results {
+		details[i] = ports.ReservationWithDetails{
+			ID:        row.ID,
+			UserID:    row.UserID,
+			UserName:  row.UserName,
+			SeatID:    row.SeatID,
+			SeatLabel: row.SeatLabel,
+			Date:      dateFromPgDate(row.Date),
+		}
+	}
+	return details, nil
+}
+
+func (r *ReservationRepository) ListByRoomAndDate(ctx context.Context, roomID uuid.UUID, date domain.Date) ([]domain.Reservation, error) {
+	results, err := r.q.ListReservationsByRoomAndDate(ctx, sqlc.ListReservationsByRoomAndDateParams{
+		RoomID: roomID,
+		Date:   domainDateToPgDate(date),
+	})
+	if err != nil {
+		return nil, err
+	}
+	reservations := make([]domain.Reservation, len(results))
+	for i, row := range results {
+		reservations[i] = domain.Reservation{
+			ID:     row.ID,
+			UserID: row.UserID,
+			SeatID: row.SeatID,
+			Date:   dateFromPgDate(row.Date),
+		}
+	}
+	return reservations, nil
+}
+
 func (r *ReservationRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.q.SoftDeleteReservation(ctx, id)
 }

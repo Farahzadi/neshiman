@@ -4,7 +4,8 @@ import type { RouteSectionProps } from '@solidjs/router';
 import { setAuthHeader } from '@neshiman/api-client';
 
 const navItems = [
-  { href: '/', label: 'Dashboard' },
+  { href: '/', label: 'Calendar' },
+  { href: '/overview', label: 'Dashboard' },
   { href: '/rooms', label: 'Rooms' },
   { href: '/reservations', label: 'Reservations' },
   { href: '/requests', label: 'Requests' },

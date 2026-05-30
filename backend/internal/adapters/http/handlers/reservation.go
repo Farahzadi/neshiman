@@ -77,6 +77,112 @@ func (h *ReservationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, dto.ReservationToResponse(reservation))
 }
 
+// AdminCreateReservation creates a reservation on behalf of another user
+// @Summary      Admin create reservation
+// @Tags         Reservations
+// @Accept       json
+// @Produce      json
+// @Param        request body dto.AdminCreateReservationRequest true "Admin reservation details"
+// @Success      201  {object}  dto.ReservationResponse
+// @Failure      400  {string}  string
+// @Failure      401  {string}  string
+// @Failure      403  {string}  string
+// @Failure      404  {string}  string
+// @Failure      409  {string}  string
+// @Router       /reservations/admin [post]
+func (h *ReservationHandler) AdminCreate(w http.ResponseWriter, r *http.Request) {
+	var req dto.AdminCreateReservationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	callerID := middleware.UserIDFromContext(r.Context())
+	if callerID == uuid.Nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	targetUserID, err := uuid.Parse(req.UserID)
+	if err != nil {
+		http.Error(w, "invalid user_id", http.StatusBadRequest)
+		return
+	}
+	seatID, err := uuid.Parse(req.SeatID)
+	if err != nil {
+		http.Error(w, "invalid seat id", http.StatusBadRequest)
+		return
+	}
+	date, err := parseDate(req.Date)
+	if err != nil {
+		http.Error(w, "invalid date, use YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	reservation, err := h.reservationSvc.AdminReserveSeat(r.Context(), callerID, targetUserID, seatID, date)
+	if err != nil {
+		status := http.StatusInternalServerError
+		switch err {
+		case domain.ErrSeatAlreadyReserved:
+			status = http.StatusConflict
+		case domain.ErrWeeklyLimitExceeded:
+			status = http.StatusTooManyRequests
+		case domain.ErrSeatNotFound, domain.ErrUserNotFound:
+			status = http.StatusNotFound
+		case domain.ErrForbidden, domain.ErrWrongTeam, domain.ErrPastDate:
+			status = http.StatusForbidden
+		}
+		http.Error(w, err.Error(), status)
+		return
+	}
+	writeJSON(w, http.StatusCreated, dto.ReservationToResponse(reservation))
+}
+
+// ListReservationsByRoomAndDate returns reservations for a room on a date with user and seat details
+// @Summary      List reservations by room and date
+// @Tags         Reservations
+// @Produce      json
+// @Param        room_id  query     string  true  "Room ID"
+// @Param        date     query     string  false  "Date in YYYY-MM-DD format (defaults to today)"
+// @Success      200      {array}   dto.ReservationWithUserResponse
+// @Router       /reservations/by-room [get]
+func (h *ReservationHandler) ListByRoomAndDate(w http.ResponseWriter, r *http.Request) {
+	roomIDStr := r.URL.Query().Get("room_id")
+	if roomIDStr == "" {
+		http.Error(w, "room_id query parameter required", http.StatusBadRequest)
+		return
+	}
+	roomID, err := uuid.Parse(roomIDStr)
+	if err != nil {
+		http.Error(w, "invalid room_id", http.StatusBadRequest)
+		return
+	}
+
+	dateStr := r.URL.Query().Get("date")
+	date, err := parseDate(dateStr)
+	if err != nil {
+		date = domain.Date{Year: time.Now().Year(), Month: int(time.Now().Month()), Day: time.Now().Day()}
+	}
+
+	details, err := h.reservationSvc.ListByRoomAndDateWithDetails(r.Context(), roomID, date)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	responses := make([]dto.ReservationWithUserResponse, len(details))
+	for i, d := range details {
+		responses[i] = dto.ReservationWithUserResponse{
+			ID:        d.ID,
+			UserID:    d.UserID,
+			UserName:  d.UserName,
+			SeatID:    d.SeatID,
+			SeatLabel: d.SeatLabel,
+			Date:      dto.FormatDate(d.Date),
+		}
+	}
+	writeJSON(w, http.StatusOK, responses)
+}
+
 // CancelReservation cancels a reservation
 // @Summary      Cancel a reservation
 // @Tags         Reservations

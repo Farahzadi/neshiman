@@ -13,7 +13,7 @@ func TestReservationService_ReserveSeat(t *testing.T) {
 	userID := uuid.New()
 	seatID := uuid.New()
 	teamID := uuid.New()
-	date := domain.Date{Year: 2026, Month: 5, Day: 20}
+	date := domain.Date{Year: 2027, Month: 6, Day: 15}
 
 	t.Run("success", func(t *testing.T) {
 		var created *domain.Reservation
@@ -281,7 +281,11 @@ func TestReservationService_CancelReservation(t *testing.T) {
 				},
 			},
 			&mockSeatRepo{},
-			&mockUserRepo{},
+			&mockUserRepo{
+				getByIDFn: func(_ context.Context, _ uuid.UUID) (*domain.User, error) {
+					return &domain.User{Role: domain.RoleViewer}, nil
+				},
+			},
 			&mockTxManager{},
 		)
 		err := svc.CancelReservation(context.Background(), reservationID, userID)
@@ -291,6 +295,7 @@ func TestReservationService_CancelReservation(t *testing.T) {
 	})
 
 	t.Run("wrong user", func(t *testing.T) {
+		callerUserID := uuid.New()
 		svc := NewReservationService(
 			&mockReservationRepo{
 				getByIDFn: func(_ context.Context, _ uuid.UUID) (*domain.Reservation, error) {
@@ -298,10 +303,14 @@ func TestReservationService_CancelReservation(t *testing.T) {
 				},
 			},
 			&mockSeatRepo{},
-			&mockUserRepo{},
+			&mockUserRepo{
+				getByIDFn: func(_ context.Context, _ uuid.UUID) (*domain.User, error) {
+					return &domain.User{ID: callerUserID, Role: domain.RoleViewer, TeamID: &uuid.UUID{}}, nil
+				},
+			},
 			&mockTxManager{},
 		)
-		err := svc.CancelReservation(context.Background(), reservationID, userID)
+		err := svc.CancelReservation(context.Background(), reservationID, callerUserID)
 		if !errors.Is(err, domain.ErrForbidden) {
 			t.Errorf("got %v, want %v", err, domain.ErrForbidden)
 		}

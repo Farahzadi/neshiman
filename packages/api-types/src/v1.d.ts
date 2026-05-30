@@ -66,6 +66,26 @@ export interface paths {
       };
     };
   };
+  "/cross-team-requests/all": {
+    get: {
+      responses: {
+        /** OK */
+        200: {
+          schema: definitions["dto.CrossTeamRequestResponse"][];
+        };
+      };
+    };
+  };
+  "/cross-team-requests/mine": {
+    get: {
+      responses: {
+        /** OK */
+        200: {
+          schema: definitions["dto.CrossTeamRequestResponse"][];
+        };
+      };
+    };
+  };
   "/cross-team-requests/pending-by-team": {
     get: {
       parameters: {
@@ -123,6 +143,10 @@ export interface paths {
         400: {
           schema: string;
         };
+        /** Forbidden */
+        403: {
+          schema: string;
+        };
       };
     };
   };
@@ -141,6 +165,10 @@ export interface paths {
         };
         /** Bad Request */
         400: {
+          schema: string;
+        };
+        /** Forbidden */
+        403: {
           schema: string;
         };
       };
@@ -198,6 +226,60 @@ export interface paths {
         /** Too Many Requests */
         429: {
           schema: string;
+        };
+      };
+    };
+  };
+  "/reservations/admin": {
+    post: {
+      parameters: {
+        body: {
+          /** Admin reservation details */
+          request: definitions["dto.AdminCreateReservationRequest"];
+        };
+      };
+      responses: {
+        /** Created */
+        201: {
+          schema: definitions["dto.ReservationResponse"];
+        };
+        /** Bad Request */
+        400: {
+          schema: string;
+        };
+        /** Unauthorized */
+        401: {
+          schema: string;
+        };
+        /** Forbidden */
+        403: {
+          schema: string;
+        };
+        /** Not Found */
+        404: {
+          schema: string;
+        };
+        /** Conflict */
+        409: {
+          schema: string;
+        };
+      };
+    };
+  };
+  "/reservations/by-room": {
+    get: {
+      parameters: {
+        query: {
+          /** Room ID */
+          room_id: string;
+          /** Date in YYYY-MM-DD format (defaults to today) */
+          date?: string;
+        };
+      };
+      responses: {
+        /** OK */
+        200: {
+          schema: definitions["dto.ReservationWithUserResponse"][];
         };
       };
     };
@@ -644,6 +726,70 @@ export interface paths {
       };
     };
   };
+  "/users/{id}/role": {
+    put: {
+      parameters: {
+        path: {
+          /** User ID */
+          id: string;
+        };
+        body: {
+          /** New role */
+          request: definitions["dto.UpdateUserRoleRequest"];
+        };
+      };
+      responses: {
+        /** OK */
+        200: {
+          schema: definitions["dto.UserResponse"];
+        };
+        /** Bad Request */
+        400: {
+          schema: string;
+        };
+        /** Forbidden */
+        403: {
+          schema: string;
+        };
+        /** Not Found */
+        404: {
+          schema: string;
+        };
+      };
+    };
+  };
+  "/users/{id}/team": {
+    put: {
+      parameters: {
+        path: {
+          /** User ID */
+          id: string;
+        };
+        body: {
+          /** Team ID (null to remove) */
+          request: definitions["dto.UpdateUserTeamRequest"];
+        };
+      };
+      responses: {
+        /** OK */
+        200: {
+          schema: definitions["dto.UserResponse"];
+        };
+        /** Bad Request */
+        400: {
+          schema: string;
+        };
+        /** Forbidden */
+        403: {
+          schema: string;
+        };
+        /** Not Found */
+        404: {
+          schema: string;
+        };
+      };
+    };
+  };
   "/users/{id}/weekly-limit": {
     put: {
       parameters: {
@@ -671,6 +817,11 @@ export interface paths {
 }
 
 export interface definitions {
+  "dto.AdminCreateReservationRequest": {
+    date?: string;
+    seat_id?: string;
+    user_id?: string;
+  };
   "dto.BulkSeatItem": {
     id?: string;
     label?: string;
@@ -745,6 +896,14 @@ export interface definitions {
     seat_id?: string;
     user_id?: string;
   };
+  "dto.ReservationWithUserResponse": {
+    date?: string;
+    id?: string;
+    seat_id?: string;
+    seat_label?: string;
+    user_id?: string;
+    user_name?: string;
+  };
   "dto.RoomResponse": {
     created_at?: string;
     grid_height?: number;
@@ -772,6 +931,12 @@ export interface definitions {
     grid_height?: number;
     grid_width?: number;
     name?: string;
+  };
+  "dto.UpdateUserRoleRequest": {
+    role?: string;
+  };
+  "dto.UpdateUserTeamRequest": {
+    team_id?: string;
   };
   "dto.UpdateWeeklyLimitRequest": {
     weekly_limit?: number;

@@ -1,4 +1,4 @@
-import { Component, createMemo, Show } from 'solid-js';
+import { Component, createMemo } from 'solid-js';
 import { A } from '@solidjs/router';
 import { useRooms, useTeams } from '@neshiman/api-client';
 

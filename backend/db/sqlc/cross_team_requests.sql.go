@@ -60,12 +60,78 @@ func (q *Queries) GetCrossTeamRequestByID(ctx context.Context, id uuid.UUID) (Cr
 	return i, err
 }
 
+const listCrossTeamRequestsAll = `-- name: ListCrossTeamRequestsAll :many
+SELECT id, requesting_user_id, target_seat_id, date, status, created_at, updated_at, deleted_at FROM cross_team_requests WHERE deleted_at IS NULL ORDER BY created_at DESC
+`
+
+func (q *Queries) ListCrossTeamRequestsAll(ctx context.Context) ([]CrossTeamRequest, error) {
+	rows, err := q.db.Query(ctx, listCrossTeamRequestsAll)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CrossTeamRequest
+	for rows.Next() {
+		var i CrossTeamRequest
+		if err := rows.Scan(
+			&i.ID,
+			&i.RequestingUserID,
+			&i.TargetSeatID,
+			&i.Date,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCrossTeamRequestsByStatus = `-- name: ListCrossTeamRequestsByStatus :many
 SELECT id, requesting_user_id, target_seat_id, date, status, created_at, updated_at, deleted_at FROM cross_team_requests WHERE status = $1 AND deleted_at IS NULL ORDER BY created_at DESC
 `
 
 func (q *Queries) ListCrossTeamRequestsByStatus(ctx context.Context, status string) ([]CrossTeamRequest, error) {
 	rows, err := q.db.Query(ctx, listCrossTeamRequestsByStatus, status)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CrossTeamRequest
+	for rows.Next() {
+		var i CrossTeamRequest
+		if err := rows.Scan(
+			&i.ID,
+			&i.RequestingUserID,
+			&i.TargetSeatID,
+			&i.Date,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCrossTeamRequestsByUser = `-- name: ListCrossTeamRequestsByUser :many
+SELECT id, requesting_user_id, target_seat_id, date, status, created_at, updated_at, deleted_at FROM cross_team_requests WHERE requesting_user_id = $1 AND deleted_at IS NULL ORDER BY created_at DESC
+`
+
+func (q *Queries) ListCrossTeamRequestsByUser(ctx context.Context, requestingUserID uuid.UUID) ([]CrossTeamRequest, error) {
+	rows, err := q.db.Query(ctx, listCrossTeamRequestsByUser, requestingUserID)
 	if err != nil {
 		return nil, err
 	}

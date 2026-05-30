@@ -27,5 +27,13 @@ RETURNING *;
 UPDATE users SET password_hash = $2, updated_at = now()
 WHERE id = $1 AND deleted_at IS NULL;
 
+-- name: UpdateUserRole :exec
+UPDATE users SET role = $2, updated_at = now()
+WHERE id = $1 AND deleted_at IS NULL;
+
+-- name: UpdateUserTeamID :exec
+UPDATE users SET team_id = $2, updated_at = now()
+WHERE id = $1 AND deleted_at IS NULL;
+
 -- name: SoftDeleteUser :exec
 UPDATE users SET deleted_at = now() WHERE id = $1;

@@ -92,6 +92,42 @@ func (r *CrossTeamRequestRepository) ListPendingByTeam(ctx context.Context, team
 	return requests, nil
 }
 
+func (r *CrossTeamRequestRepository) ListByUser(ctx context.Context, userID uuid.UUID) ([]domain.CrossTeamRequest, error) {
+	results, err := r.q.ListCrossTeamRequestsByUser(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	requests := make([]domain.CrossTeamRequest, len(results))
+	for i, row := range results {
+		requests[i] = domain.CrossTeamRequest{
+			ID:               row.ID,
+			RequestingUserID: row.RequestingUserID,
+			TargetSeatID:     row.TargetSeatID,
+			Date:             domain.Date{Year: row.Date.Time.Year(), Month: int(row.Date.Time.Month()), Day: row.Date.Time.Day()},
+			Status:           domain.RequestStatus(row.Status),
+		}
+	}
+	return requests, nil
+}
+
+func (r *CrossTeamRequestRepository) ListAll(ctx context.Context) ([]domain.CrossTeamRequest, error) {
+	results, err := r.q.ListCrossTeamRequestsAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+	requests := make([]domain.CrossTeamRequest, len(results))
+	for i, row := range results {
+		requests[i] = domain.CrossTeamRequest{
+			ID:               row.ID,
+			RequestingUserID: row.RequestingUserID,
+			TargetSeatID:     row.TargetSeatID,
+			Date:             domain.Date{Year: row.Date.Time.Year(), Month: int(row.Date.Time.Month()), Day: row.Date.Time.Day()},
+			Status:           domain.RequestStatus(row.Status),
+		}
+	}
+	return requests, nil
+}
+
 func (r *CrossTeamRequestRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status domain.RequestStatus) error {
 	_, err := r.q.UpdateCrossTeamRequestStatus(ctx, sqlc.UpdateCrossTeamRequestStatusParams{
 		ID:     id,

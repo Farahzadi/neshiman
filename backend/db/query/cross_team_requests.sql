@@ -16,6 +16,12 @@ JOIN teams t ON s.team_id = t.id
 WHERE t.id = $1 AND ctr.status = 'pending' AND ctr.deleted_at IS NULL
 ORDER BY ctr.created_at DESC;
 
+-- name: ListCrossTeamRequestsByUser :many
+SELECT * FROM cross_team_requests WHERE requesting_user_id = $1 AND deleted_at IS NULL ORDER BY created_at DESC;
+
+-- name: ListCrossTeamRequestsAll :many
+SELECT * FROM cross_team_requests WHERE deleted_at IS NULL ORDER BY created_at DESC;
+
 -- name: UpdateCrossTeamRequestStatus :one
 UPDATE cross_team_requests
 SET status = $2, updated_at = now()

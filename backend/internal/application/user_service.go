@@ -58,6 +58,63 @@ func (s *UserService) UpdateWeeklyLimit(ctx context.Context, userID uuid.UUID, l
 	return s.users.UpdateWeeklyLimit(ctx, userID, limit)
 }
 
+func (s *UserService) UpdateUserRole(ctx context.Context, callerID, targetID uuid.UUID, role domain.Role) error {
+	if role != domain.RoleSuperAdmin && role != domain.RoleTeamAdmin && role != domain.RoleViewer {
+		return domain.ErrForbidden
+	}
+
+	caller, err := s.users.GetByID(ctx, callerID)
+	if err != nil {
+		return err
+	}
+
+	target, err := s.users.GetByID(ctx, targetID)
+	if err != nil {
+		return err
+	}
+
+	if target.IsSuperAdmin() {
+		return domain.ErrCannotChangeSuperAdmin
+	}
+
+	// team_admin can only change viewers in their team
+	if caller.IsTeamAdmin() {
+		if !caller.IsAdminOfTeam(*target.TeamID) {
+			return domain.ErrWrongTeam
+		}
+		if target.Role != domain.RoleViewer {
+			return domain.ErrForbidden
+		}
+	}
+
+	return s.users.UpdateRole(ctx, targetID, role)
+}
+
+func (s *UserService) UpdateUserTeam(ctx context.Context, callerID, targetID uuid.UUID, teamID *uuid.UUID) error {
+	caller, err := s.users.GetByID(ctx, callerID)
+	if err != nil {
+		return err
+	}
+	if !caller.IsSuperAdmin() {
+		return domain.ErrForbidden
+	}
+
+	target, err := s.users.GetByID(ctx, targetID)
+	if err != nil {
+		return err
+	}
+	if target.IsSuperAdmin() {
+		return domain.ErrCannotChangeSuperAdmin
+	}
+
+	// If teamID is provided, verify team exists
+	if teamID != nil {
+		// We'll validate team existence via the handler
+	}
+
+	return s.users.UpdateTeamID(ctx, targetID, teamID)
+}
+
 func (s *UserService) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	user, err := s.users.GetByID(ctx, id)
 	if err != nil {

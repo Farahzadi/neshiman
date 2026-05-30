@@ -69,7 +69,7 @@ func ReservationToResponse(r *domain.Reservation) ReservationResponse {
 		ID:     r.ID,
 		UserID: r.UserID,
 		SeatID: r.SeatID,
-		Date:   formatDate(r.Date),
+		Date:   FormatDate(r.Date),
 	}
 }
 
@@ -106,7 +106,7 @@ func CrossTeamRequestToResponse(r *domain.CrossTeamRequest) CrossTeamRequestResp
 		ID:               r.ID,
 		RequestingUserID: r.RequestingUserID,
 		TargetSeatID:     r.TargetSeatID,
-		Date:             formatDate(r.Date),
+		Date:             FormatDate(r.Date),
 		Status:           string(r.Status),
 	}
 }
@@ -123,7 +123,7 @@ func SeatListToResponse(seats []domain.Seat) []SeatResponse {
 	return responses
 }
 
-func formatDate(d domain.Date) string {
+func FormatDate(d domain.Date) string {
 	return time.Date(d.Year, time.Month(d.Month), d.Day, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
 }
 
@@ -135,4 +135,13 @@ type LoginResponse struct {
 type DeleteResponse struct {
 	Deleted      bool  `json:"deleted"`
 	SeatsDeleted *int  `json:"seats_deleted,omitempty"`
+}
+
+type ReservationWithUserResponse struct {
+	ID          uuid.UUID `json:"id"`
+	UserID      uuid.UUID `json:"user_id"`
+	UserName    string    `json:"user_name"`
+	SeatID      uuid.UUID `json:"seat_id"`
+	SeatLabel   string    `json:"seat_label"`
+	Date        string    `json:"date"`
 }

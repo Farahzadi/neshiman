@@ -32,6 +32,27 @@ export function useCreateReservation() {
   }));
 }
 
+type ReservationWithUser = definitions['dto.ReservationWithUserResponse'];
+type AdminCreateReservation = definitions['dto.AdminCreateReservationRequest'];
+
+export function useReservationsByRoomDate(roomId: () => string, date: () => string) {
+  return useQuery(() => ({
+    queryKey: ['reservations', 'by-room', roomId(), date()] as const,
+    queryFn: () =>
+      apiFetch<ReservationWithUser[]>(`/v1/reservations/by-room?room_id=${roomId()}&date=${date()}`),
+    enabled: !!roomId() && !!date(),
+  }));
+}
+
+export function useAdminCreateReservation() {
+  const qc = useQueryClient();
+  return useMutation(() => ({
+    mutationFn: (data: AdminCreateReservation) =>
+      apiFetch<Reservation>('/v1/reservations/admin', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['reservations'] }),
+  }));
+}
+
 export function useCancelReservation() {
   const qc = useQueryClient();
   return useMutation(() => ({

@@ -5,6 +5,9 @@ import {
   useCreateUser,
   useDeleteUser,
   useUpdateWeeklyLimit,
+  useUpdateUserRole,
+  useUpdateUserTeam,
+  useSetPassword,
   ApiError,
 } from '@neshiman/api-client';
 import type { definitions } from '@neshiman/api-types';
@@ -13,6 +16,11 @@ import ConfirmModal from '../components/ConfirmModal';
 import { showToast } from '../stores/toast';
 
 type User = definitions['dto.UserResponse'];
+
+function getCurrentUser() {
+  try { return JSON.parse(localStorage.getItem('neshiman_user') ?? 'null'); }
+  catch { return null; }
+}
 
 const Users: Component = () => {
   const teams = useTeams();
@@ -23,6 +31,9 @@ const Users: Component = () => {
   const createUser = useCreateUser();
   const deleteUser = useDeleteUser();
   const updateLimit = useUpdateWeeklyLimit();
+  const updateRole = useUpdateUserRole();
+  const updateTeam = useUpdateUserTeam();
+  const setPassword = useSetPassword();
 
   const [showForm, setShowForm] = createSignal(false);
   const [userName, setUserName] = createSignal('');
@@ -33,6 +44,16 @@ const Users: Component = () => {
 
   const [editingLimit, setEditingLimit] = createSignal<{ id: string; limit: number } | null>(null);
   const [deleteTarget, setDeleteTarget] = createSignal<string | null>(null);
+
+  const [editingUser, setEditingUser] = createSignal<User | null>(null);
+  const [editRole, setEditRole] = createSignal('');
+  const [editPassword, setEditPassword] = createSignal('');
+  const [editTeamId, setEditTeamId] = createSignal('');
+
+  const currentUser = createMemo(() => getCurrentUser());
+  const isSuperAdmin = createMemo(() => currentUser()?.role === 'superadmin');
+  const isTeamAdmin = createMemo(() => currentUser()?.role === 'team_admin');
+  const canEdit = createMemo(() => isSuperAdmin() || isTeamAdmin());
 
   const teamName = createMemo(() => {
     const map = new Map<string, string>();
@@ -88,6 +109,38 @@ const Users: Component = () => {
       showToast('Weekly limit updated.', 'success');
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : 'Failed to update limit', 'error');
+    }
+  };
+
+  const openEditUser = (user: User) => {
+    setEditingUser(user);
+    setEditRole(user.role ?? 'viewer');
+    setEditPassword('');
+    setEditTeamId(user.team_id ?? '');
+  };
+
+  const handleEditUser = async (e: Event) => {
+    e.preventDefault();
+    const user = editingUser();
+    if (!user?.id) return;
+
+    try {
+      // Update role if changed
+      if (editRole() !== (user.role ?? 'viewer')) {
+        await updateRole.mutateAsync({ id: user.id, data: { role: editRole() } });
+      }
+      // Update team if changed and superadmin
+      if (isSuperAdmin() && editTeamId() !== (user.team_id ?? '')) {
+        await updateTeam.mutateAsync({ id: user.id, data: { team_id: editTeamId() as string | undefined } });
+      }
+      // Set password if provided
+      if (editPassword()) {
+        await setPassword.mutateAsync({ id: user.id, password: editPassword() });
+      }
+      setEditingUser(null);
+      showToast('User updated.', 'success');
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : 'Failed to update user', 'error');
     }
   };
 
@@ -169,7 +222,12 @@ const Users: Component = () => {
                         </div>
                       </Show>
                     </td>
-                    <td class="px-4 py-3">
+                    <td class="px-4 py-3 flex gap-2">
+                      <Show when={canEdit()}>
+                        <button onClick={() => openEditUser(user)} class="text-blue-600 hover:underline text-xs">
+                          Edit
+                        </button>
+                      </Show>
                       <Show when={user.role !== 'superadmin'}>
                         <button onClick={() => handleDeleteUser(user.id!)} class="text-red-600 hover:underline text-xs">
                           Delete
@@ -240,6 +298,56 @@ const Users: Component = () => {
             </button>
             <button type="submit" disabled={createUser.isPending} class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm">
               Create
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal open={editingUser() !== null} onClose={() => setEditingUser(null)} title={`Edit User - ${editingUser()?.name ?? ''}`}>
+        <form onSubmit={handleEditUser} class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <select
+              value={editRole()}
+              onChange={(e) => setEditRole(e.currentTarget.value)}
+              class="w-full border rounded-md px-3 py-2 text-sm"
+            >
+              <option value="viewer">Viewer</option>
+              <option value="team_admin">Team Admin</option>
+              <option value="superadmin">Superadmin</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+            <input
+              type="password"
+              value={editPassword()}
+              onInput={(e) => setEditPassword(e.currentTarget.value)}
+              placeholder="Leave blank to keep current"
+              class="w-full border rounded-md px-3 py-2 text-sm"
+            />
+          </div>
+          <Show when={isSuperAdmin()}>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Team</label>
+              <select
+                value={editTeamId()}
+                onChange={(e) => setEditTeamId(e.currentTarget.value)}
+                class="w-full border rounded-md px-3 py-2 text-sm"
+              >
+                <option value="">No team</option>
+                <For each={teams.data}>
+                  {(team) => <option value={team.id!}>{team.name}</option>}
+                </For>
+              </select>
+            </div>
+          </Show>
+          <div class="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={() => setEditingUser(null)} class="px-4 py-2 border rounded-md text-sm">
+              Cancel
+            </button>
+            <button type="submit" disabled={updateRole.isPending || setPassword.isPending} class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm">
+              Save
             </button>
           </div>
         </form>
