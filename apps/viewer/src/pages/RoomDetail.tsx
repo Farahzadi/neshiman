@@ -1,9 +1,10 @@
 import { Component, createMemo, createSignal, For, Show, onMount } from 'solid-js';
 import { A, useParams } from '@solidjs/router';
+import { useQueryClient } from '@tanstack/solid-query';
 import {
   useRoom,
   useSeatsByRoom,
-  useReservationsByDate,
+  useReservationsByRoomDate,
   useCreateReservation,
   useCancelReservation,
   useAdminCreateReservation,
@@ -62,8 +63,10 @@ const RoomDetail: Component = () => {
     }
   });
 
-  const reservations = useReservationsByDate(selectedDate);
+  type ReservationWithUser = definitions['dto.ReservationWithUserResponse'];
+  const reservations = useReservationsByRoomDate(() => params.id, selectedDate);
 
+  const queryClient = useQueryClient();
   const createReservation = useCreateReservation();
   const cancelReservation = useCancelReservation();
   const adminCreateReservation = useAdminCreateReservation();
@@ -103,7 +106,7 @@ const RoomDetail: Component = () => {
   });
 
   const reservationBySeat = createMemo(() => {
-    const map = new Map<string, definitions['dto.ReservationResponse']>();
+    const map = new Map<string, ReservationWithUser>();
     for (const r of reservations.data ?? []) {
       if (r.seat_id) map.set(r.seat_id, r);
     }
@@ -119,6 +122,7 @@ const RoomDetail: Component = () => {
     setSuccessMsg('');
     try {
       await createReservation.mutateAsync({ date: selectedDate(), seat_id: seatId });
+      queryClient.refetchQueries({ queryKey: ['reservations'] });
       setShowConfirm(null);
       setSuccessMsg('Reservation confirmed!');
       setTimeout(() => setSuccessMsg(''), 3000);
@@ -132,6 +136,7 @@ const RoomDetail: Component = () => {
     setSuccessMsg('');
     try {
       await createCrossTeamRequest.mutateAsync({ date: selectedDate(), target_seat_id: seatId });
+      queryClient.refetchQueries({ queryKey: ['reservations'] });
       setShowConfirm(null);
       setSuccessMsg('Cross-team request submitted!');
       setTimeout(() => setSuccessMsg(''), 3000);
@@ -293,6 +298,9 @@ const RoomDetail: Component = () => {
                           <Show when={isPermanentAssigned}>
                             <br /><span class="text-[7px] font-normal">{isMyPermanentSeat ? 'Your seat' : 'Assigned'}</span>
                           </Show>
+                          <Show when={isReserved && !isReservedByMe && reservationBySeat().get(seat.id!)?.user_name}>
+                            <br /><span class="text-[7px] font-normal">{reservationBySeat().get(seat.id!)?.user_name?.slice(0, 10)}</span>
+                          </Show>
                         </span>
                       </div>
                     </div>
@@ -359,6 +367,7 @@ const RoomDetail: Component = () => {
                       if (isReservedByMe) {
                         const res = reservationBySeat().get(seat().id!);
                         cancelReservation.mutateAsync(res?.id ?? '').then(() => {
+                          queryClient.refetchQueries({ queryKey: ['reservations'] });
                           setShowConfirm(null);
                           setSuccessMsg('Reservation cancelled!');
                           setTimeout(() => setSuccessMsg(''), 3000);
@@ -367,6 +376,7 @@ const RoomDetail: Component = () => {
                         });
                       } else if (isAdminReserve && adminTargetUserId()) {
                         adminCreateReservation.mutateAsync({ date: selectedDate(), seat_id: seat().id!, user_id: adminTargetUserId() }).then(() => {
+                          queryClient.refetchQueries({ queryKey: ['reservations'] });
                           setShowConfirm(null);
                           setSuccessMsg('Reservation created for team member!');
                           setTimeout(() => setSuccessMsg(''), 3000);

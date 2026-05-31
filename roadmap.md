@@ -161,3 +161,13 @@ Improve the viewer weekly calendar and cross-team requests page with today highl
 - [x] **Hide Requests from viewers** — Conditionally show "Requests" nav item only for team_admin/superadmin in viewer Layout
 - [x] **Team-filtered requests** — For team admins, filter cross-team requests list to only show requests where the seat belongs to their team
 - [x] **Approve/reject for team admins** — Add approve/reject buttons to viewer CrossTeamRequests page for pending requests to the admin's team
+
+## Phase 11 — WeeklyCalendar UX Improvements
+
+Improve the weekly calendar page with room filter persistence, reserved seat name display, and modal behavior fixes.
+
+- [x] **Save last room filter** — Persist `selectedRoomId` to `localStorage('neshiman_calendar_room')`; restore on page load; default to first room in dropdown when no saved state
+- [x] **Show reserved person's name** — Change own reservation cell from "✓ Reserved" to "✓ You"; show `user_name` on all reserved cells instead of generic labels; also apply to RoomDetail reserved seats (switched to `useReservationsByRoomDate` for `user_name` access)
+- [x] **Verify working week (Sat–Wed)** — Confirmed defaults (`sat` / `5` days) render Sat–Sun–Mon–Tue–Wed correctly; no code changes needed
+- [x] **Modal close + UI refresh on success** — Already works: `setSelectedModal(null)` / `setShowConfirm(null)` fires on success; all reservation mutations invalidate `['reservations']` queries
+- [x] **Error toast for API errors** — WeeklyCalendar now shows errors in red (`bg-red-50 border-red-200`) instead of blue; 429 (weekly limit exceeded) and other errors clearly visible to user

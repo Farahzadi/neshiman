@@ -1,5 +1,6 @@
 import { Component, createMemo, createSignal, For, Show } from 'solid-js';
 
+import { useQueryClient } from '@tanstack/solid-query';
 import {
   useRooms,
   useSeatsByRoom,
@@ -90,11 +91,26 @@ const WeeklyCalendar: Component = () => {
   const teams = useTeams();
   const allUsers = useUsers(() => '');
 
-  const [selectedRoomId, setSelectedRoomId] = createSignal('');
+  let savedRoomId = '';
+  try { savedRoomId = localStorage.getItem('neshiman_calendar_room') ?? ''; } catch { savedRoomId = ''; }
+  const [selectedRoomId, setSelectedRoomId] = createSignal(savedRoomId);
+
+  const effectiveRoomId = createMemo(() => {
+    const current = selectedRoomId();
+    const roomsData = rooms.data;
+    if (current && roomsData?.some((r) => r.id === current)) return current;
+    return roomsData?.[0]?.id ?? '';
+  });
+
+  const handleRoomChange = (value: string) => {
+    setSelectedRoomId(value);
+    try { localStorage.setItem('neshiman_calendar_room', value); } catch { /* localStorage unavailable */ }
+  };
   const [weekOffset, setWeekOffset] = createSignal(0);
   const [selectedModal, setSelectedModal] = createSignal<{ seat: Seat; date: Date; isReservedByMe: boolean; isAdminReserve?: boolean } | null>(null);
   const [selectedUserForReserve, setSelectedUserForReserve] = createSignal('');
-  const [msg, setMsg] = createSignal('');
+  const [successMsg, setSuccessMsg] = createSignal('');
+  const [errMsg, setErrMsg] = createSignal('');
 
   const currentUserId = () => getCurrentUserId();
   const currentUser = createMemo(() => allUsers.data?.find((u) => u.id === currentUserId()));
@@ -109,32 +125,31 @@ const WeeklyCalendar: Component = () => {
 
   const dateStrings = createMemo(() => weekDays().workDays.map(formatDate));
 
-  // Fetch all rooms if none selected
-  const seats = useSeatsByRoom(selectedRoomId);
+  const seats = useSeatsByRoom(effectiveRoomId);
 
   // We need per-date queries. Use the first date for now, extend later
   const day0Reservations = useReservationsByRoomDate(
-    () => selectedRoomId(),
+    () => effectiveRoomId(),
     () => dateStrings()[0] ?? '',
   );
 
   const day1Reservations = useReservationsByRoomDate(
-    () => selectedRoomId(),
+    () => effectiveRoomId(),
     () => dateStrings()[1] ?? '',
   );
 
   const day2Reservations = useReservationsByRoomDate(
-    () => selectedRoomId(),
+    () => effectiveRoomId(),
     () => dateStrings()[2] ?? '',
   );
 
   const day3Reservations = useReservationsByRoomDate(
-    () => selectedRoomId(),
+    () => effectiveRoomId(),
     () => dateStrings()[3] ?? '',
   );
 
   const day4Reservations = useReservationsByRoomDate(
-    () => selectedRoomId(),
+    () => effectiveRoomId(),
     () => dateStrings()[4] ?? '',
   );
 
@@ -148,6 +163,14 @@ const WeeklyCalendar: Component = () => {
     ];
     return data;
   });
+
+  const allReservationsReady = createMemo(() =>
+    !day0Reservations.isLoading && !day1Reservations.isLoading &&
+    !day2Reservations.isLoading && !day3Reservations.isLoading &&
+    !day4Reservations.isLoading
+  );
+
+  const queryClient = useQueryClient();
 
   const createReservation = useCreateReservation();
   const cancelReservation = useCancelReservation();
@@ -238,23 +261,24 @@ const WeeklyCalendar: Component = () => {
     try {
       if (modal.isReservedByMe) {
         await cancelReservation.mutateAsync(r!.id!);
-        setMsg('Reservation cancelled!');
+        setSuccessMsg('Reservation cancelled!');
       } else if (modal.isAdminReserve && selectedUserForReserve()) {
         await adminCreateReservation.mutateAsync({ date: dateStr, seat_id: seatId, user_id: selectedUserForReserve() });
-        setMsg('Reservation created for team member!');
+        setSuccessMsg('Reservation created for team member!');
       } else if (isOwnTeam(modal.seat)) {
         await createReservation.mutateAsync({ date: dateStr, seat_id: seatId });
-        setMsg('Reservation confirmed!');
+        setSuccessMsg('Reservation confirmed!');
       } else {
         await createCrossTeamRequest.mutateAsync({ date: dateStr, target_seat_id: seatId });
-        setMsg('Cross-team request submitted!');
+        setSuccessMsg('Cross-team request submitted!');
       }
+      queryClient.refetchQueries({ queryKey: ['reservations'] });
       setSelectedModal(null);
       setSelectedUserForReserve('');
-      setTimeout(() => setMsg(''), 3000);
+      setTimeout(() => setSuccessMsg(''), 3000);
     } catch (err) {
-      setMsg(err instanceof ApiError ? err.message : 'Failed');
-      setTimeout(() => setMsg(''), 3000);
+      setErrMsg(err instanceof ApiError ? err.message : 'Failed');
+      setTimeout(() => setErrMsg(''), 5000);
     }
   };
 
@@ -284,10 +308,16 @@ const WeeklyCalendar: Component = () => {
         </div>
       </div>
 
-      <Show when={msg()}>
+      <Show when={successMsg()}>
         <div class="mb-4 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700 flex items-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
-          {msg()}
+          {successMsg()}
+        </div>
+      </Show>
+      <Show when={errMsg()}>
+        <div class="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>
+          {errMsg()}
         </div>
       </Show>
 
@@ -295,11 +325,10 @@ const WeeklyCalendar: Component = () => {
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Room</label>
           <select
-            value={selectedRoomId()}
-            onChange={(e) => setSelectedRoomId(e.currentTarget.value)}
+            value={effectiveRoomId()}
+            onChange={(e) => handleRoomChange(e.currentTarget.value)}
             class="border rounded-md px-3 py-2 text-sm w-64"
           >
-            <option value="">Select a room</option>
             <For each={rooms.data}>
               {(room) => <option value={room.id!}>{room.name} ({room.grid_width}×{room.grid_height})</option>}
             </For>
@@ -328,7 +357,7 @@ const WeeklyCalendar: Component = () => {
       </div>
 
       <Show
-        when={selectedRoomId()}
+        when={effectiveRoomId()}
         fallback={
           <div class="bg-white rounded-xl border border-dashed border-gray-300 p-12 text-center text-gray-400">
             <p class="text-lg font-medium mb-1">Select a room</p>
@@ -336,121 +365,132 @@ const WeeklyCalendar: Component = () => {
           </div>
         }
       >
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-auto">
-          <div class="min-w-max">
-            {/* Header row: day names */}
-            <div class="flex border-b border-gray-200 bg-gray-50/80">
-              <div class="w-24 shrink-0 px-3 py-3 text-xs font-medium text-gray-500 border-r border-gray-200">
-                Seat
+        <Show when={allReservationsReady()}
+          fallback={
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center text-gray-400">
+              <div class="flex items-center justify-center gap-2">
+                <div class="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <span class="text-sm">Loading reservations...</span>
               </div>
-              <For each={workDays()}>
-                {(day) => {
-                  const today = todayDate();
-                  const isToday = day.getFullYear() === today.getFullYear() &&
-                    day.getMonth() === today.getMonth() &&
-                    day.getDate() === today.getDate();
-                  return (
-                    <div class="w-28 shrink-0 px-3 py-3 text-center border-r border-gray-200 last:border-r-0"
-                      classList={{ 'bg-blue-50 border-l-2 border-l-blue-400': isToday }}
-                    >
-                      <div class={`text-xs font-medium ${isToday ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
-                        {DAY_NAMES[Object.keys(DAY_NAMES)[day.getDay()]] ?? day.toLocaleDateString('en', { weekday: 'short' })}
-                      </div>
-                      <div class={`text-sm font-bold ${isToday ? 'text-blue-600' : 'text-gray-800'}`}>
-                        {isToday ? (
-                          <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white text-xs">
-                            {day.getDate()}
-                          </span>
-                        ) : day.getDate()}
-                      </div>
-                    </div>
-                  );
-                }}
-              </For>
             </div>
-
-            {/* Seat rows */}
-            <For each={sortedSeats()}>
-              {(seat) => (
-                <div class="flex border-b border-gray-100 last:border-b-0 hover:bg-gray-50/50">
-                  <div class="w-24 shrink-0 px-3 py-3 text-sm font-medium text-gray-700 border-r border-gray-100 flex items-center gap-2">
-                    <div class="w-2.5 h-2.5 rounded-sm" classList={{
-                      [TEAM_COLORS[teamColorMap().get(seat.team_id ?? '') ?? 0].bg]: true,
-                    }} />
-                    {seat.label}
-                  </div>
-                  <For each={workDays()}>
-                    {(day, i) => {
-                      const ds = dateStrs()[i()];
-                      const r = getReservation(ds, seat.id!);
-                      const isMine = r?.user_id === currentUserId();
-                      const past = isPastDate(day);
-                      const ownTeam = isOwnTeam(seat);
-                      const isPermanentAssigned = !!seat.assigned_user_id;
-                      const isMyPermanentSeat = isPermanentAssigned && seat.assigned_user_id === currentUserId();
-                      const today = todayDate();
-                      const isToday = day.getFullYear() === today.getFullYear() &&
-                        day.getMonth() === today.getMonth() &&
-                        day.getDate() === today.getDate();
-
-                      let cellClass = '';
-                      if (isMyPermanentSeat) {
-                        cellClass = 'bg-purple-100 border-purple-300 text-purple-700';
-                      } else if (isPermanentAssigned) {
-                        cellClass = 'bg-purple-50 border-purple-200 text-gray-400';
-                      } else if (r && isMine) {
-                        cellClass = 'bg-blue-100 border-blue-300';
-                      } else if (r) {
-                        cellClass = 'bg-gray-100 border-gray-200 text-gray-400';
-                      } else if (past) {
-                        cellClass = 'bg-gray-50 border-gray-100 text-gray-300';
-                      } else if (ownTeam) {
-                        cellClass = isToday ? 'bg-blue-50 border-blue-200 hover:bg-blue-100 cursor-pointer' : 'bg-green-50 border-green-200 hover:bg-green-100 cursor-pointer';
-                      } else {
-                        cellClass = isToday ? 'bg-blue-50 border-blue-200 hover:bg-blue-100 cursor-pointer' : 'bg-amber-50 border-amber-200 hover:bg-amber-100 cursor-pointer';
-                      }
-
-                      const showAction = !isPermanentAssigned || isMyPermanentSeat;
-
-                      return (
-                        <div
-                          class={`w-28 shrink-0 px-3 py-3 text-xs text-center border-r border-gray-100 last:border-r-0 transition-colors ${cellClass}`}
-                          classList={{
-                            'border-l-2 border-l-blue-400': isToday,
-                          }}
-                          onClick={() => showAction ? handleCellClick(seat, day, r) : undefined}
-                        >
-                          <Show when={isMyPermanentSeat}>
-                            <span class="text-purple-700 font-medium">✦ Permanent</span>
-                          </Show>
-                          <Show when={isPermanentAssigned && !isMyPermanentSeat}>
-                            <span class="text-gray-400">{seat.assigned_user_name?.slice(0, 12) ?? 'Assigned'}</span>
-                          </Show>
-                          <Show when={!isPermanentAssigned && r && isMine}>
-                            <span class="text-blue-700 font-medium">✓ Reserved</span>
-                          </Show>
-                          <Show when={!isPermanentAssigned && r && !isMine}>
-                            <span class="text-gray-400">{r?.user_name?.slice(0, 12) ?? 'Reserved'}</span>
-                          </Show>
-                          <Show when={!isPermanentAssigned && !r && !past}>
-                            <span class={ownTeam ? 'text-green-600' : 'text-amber-600'}>{ownTeam ? 'Available' : 'Cross-team'}</span>
-                          </Show>
-                          <Show when={!isPermanentAssigned && !r && past}>
-                            <span class="text-gray-300">—</span>
-                          </Show>
-                        </div>
-                      );
-                    }}
-                  </For>
+          }
+        >
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-auto">
+            <div class="min-w-max">
+              {/* Header row: day names */}
+              <div class="flex border-b border-gray-200 bg-gray-50/80">
+                <div class="w-24 shrink-0 px-3 py-3 text-xs font-medium text-gray-500 border-r border-gray-200">
+                  Seat
                 </div>
-              )}
-            </For>
+                <For each={workDays()}>
+                  {(day) => {
+                    const today = todayDate();
+                    const isToday = day.getFullYear() === today.getFullYear() &&
+                      day.getMonth() === today.getMonth() &&
+                      day.getDate() === today.getDate();
+                    return (
+                      <div class="w-28 shrink-0 px-3 py-3 text-center border-r border-gray-200 last:border-r-0"
+                        classList={{ 'bg-blue-50 border-l-2 border-l-blue-400': isToday }}
+                      >
+                        <div class={`text-xs font-medium ${isToday ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
+                          {DAY_NAMES[Object.keys(DAY_NAMES)[day.getDay()]] ?? day.toLocaleDateString('en', { weekday: 'short' })}
+                        </div>
+                        <div class={`text-sm font-bold ${isToday ? 'text-blue-600' : 'text-gray-800'}`}>
+                          {isToday ? (
+                            <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white text-xs">
+                              {day.getDate()}
+                            </span>
+                          ) : day.getDate()}
+                        </div>
+                      </div>
+                    );
+                  }}
+                </For>
+              </div>
 
-            <Show when={sortedSeats().length === 0}>
-              <div class="p-8 text-center text-gray-400">No seats in this room</div>
-            </Show>
+              {/* Seat rows */}
+              <For each={sortedSeats()}>
+                {(seat) => (
+                  <div class="flex border-b border-gray-100 last:border-b-0 hover:bg-gray-50/50">
+                    <div class="w-24 shrink-0 px-3 py-3 text-sm font-medium text-gray-700 border-r border-gray-100 flex items-center gap-2">
+                      <div class="w-2.5 h-2.5 rounded-sm" classList={{
+                        [TEAM_COLORS[teamColorMap().get(seat.team_id ?? '') ?? 0].bg]: true,
+                      }} />
+                      {seat.label}
+                    </div>
+                    <For each={workDays()}>
+                      {(day, i) => {
+                        const ds = dateStrs()[i()];
+                        const r = getReservation(ds, seat.id!);
+                        const isMine = r?.user_id === currentUserId();
+                        const past = isPastDate(day);
+                        const ownTeam = isOwnTeam(seat);
+                        const isPermanentAssigned = !!seat.assigned_user_id;
+                        const isMyPermanentSeat = isPermanentAssigned && seat.assigned_user_id === currentUserId();
+                        const today = todayDate();
+                        const isToday = day.getFullYear() === today.getFullYear() &&
+                          day.getMonth() === today.getMonth() &&
+                          day.getDate() === today.getDate();
+
+                        let cellClass = '';
+                        if (isMyPermanentSeat) {
+                          cellClass = 'bg-purple-100 border-purple-300 text-purple-700';
+                        } else if (isPermanentAssigned) {
+                          cellClass = 'bg-purple-50 border-purple-200 text-gray-400';
+                        } else if (r && isMine) {
+                          cellClass = 'bg-blue-100 border-blue-300';
+                        } else if (r) {
+                          cellClass = 'bg-gray-100 border-gray-200 text-gray-400';
+                        } else if (past) {
+                          cellClass = 'bg-gray-50 border-gray-100 text-gray-300';
+                        } else if (ownTeam) {
+                          cellClass = isToday ? 'bg-blue-50 border-blue-200 hover:bg-blue-100 cursor-pointer' : 'bg-green-50 border-green-200 hover:bg-green-100 cursor-pointer';
+                        } else {
+                          cellClass = isToday ? 'bg-blue-50 border-blue-200 hover:bg-blue-100 cursor-pointer' : 'bg-amber-50 border-amber-200 hover:bg-amber-100 cursor-pointer';
+                        }
+
+                        const showAction = !isPermanentAssigned || isMyPermanentSeat;
+
+                        return (
+                          <div
+                            class={`w-28 shrink-0 px-3 py-3 text-xs text-center border-r border-gray-100 last:border-r-0 transition-colors ${cellClass}`}
+                            classList={{
+                              'border-l-2 border-l-blue-400': isToday,
+                            }}
+                            onClick={() => showAction ? handleCellClick(seat, day, r) : undefined}
+                          >
+                            <Show when={isMyPermanentSeat}>
+                              <span class="text-purple-700 font-medium">✦ Permanent</span>
+                            </Show>
+                            <Show when={isPermanentAssigned && !isMyPermanentSeat}>
+                              <span class="text-gray-400">{seat.assigned_user_name?.slice(0, 12) ?? 'Assigned'}</span>
+                            </Show>
+                            <Show when={!isPermanentAssigned && r && isMine}>
+                              <span class="text-blue-700 font-medium">✓ You</span>
+                            </Show>
+                            <Show when={!isPermanentAssigned && r && !isMine}>
+                              <span class="text-gray-400">{r?.user_name?.slice(0, 12) ?? 'Reserved'}</span>
+                            </Show>
+                            <Show when={!isPermanentAssigned && !r && !past}>
+                              <span class={ownTeam ? 'text-green-600' : 'text-amber-600'}>{ownTeam ? 'Available' : 'Cross-team'}</span>
+                            </Show>
+                            <Show when={!isPermanentAssigned && !r && past}>
+                              <span class="text-gray-300">—</span>
+                            </Show>
+                          </div>
+                        );
+                      }}
+                    </For>
+                  </div>
+                )}
+              </For>
+
+              <Show when={sortedSeats().length === 0}>
+                <div class="p-8 text-center text-gray-400">No seats in this room</div>
+              </Show>
+            </div>
           </div>
-        </div>
+        </Show>
       </Show>
 
       {/* Legend */}
