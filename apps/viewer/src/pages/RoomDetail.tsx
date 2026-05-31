@@ -121,8 +121,12 @@ const RoomDetail: Component = () => {
     setErrorMsg('');
     setSuccessMsg('');
     try {
-      await createReservation.mutateAsync({ date: selectedDate(), seat_id: seatId });
-      queryClient.refetchQueries({ queryKey: ['reservations'] });
+      const result = await createReservation.mutateAsync({ date: selectedDate(), seat_id: seatId });
+      const user = allUsers.data?.find((u) => u.id === currentUserId());
+      queryClient.setQueryData<ReservationWithUser[]>(
+        ['reservations', 'by-room', params.id, selectedDate()],
+        (old) => [...(old ?? []), { ...result, user_name: user?.name ?? '', seat_label: '' } as unknown as ReservationWithUser]
+      );
       setShowConfirm(null);
       setSuccessMsg('Reservation confirmed!');
       setTimeout(() => setSuccessMsg(''), 3000);
@@ -136,7 +140,6 @@ const RoomDetail: Component = () => {
     setSuccessMsg('');
     try {
       await createCrossTeamRequest.mutateAsync({ date: selectedDate(), target_seat_id: seatId });
-      queryClient.refetchQueries({ queryKey: ['reservations'] });
       setShowConfirm(null);
       setSuccessMsg('Cross-team request submitted!');
       setTimeout(() => setSuccessMsg(''), 3000);
@@ -367,7 +370,10 @@ const RoomDetail: Component = () => {
                       if (isReservedByMe) {
                         const res = reservationBySeat().get(seat().id!);
                         cancelReservation.mutateAsync(res?.id ?? '').then(() => {
-                          queryClient.refetchQueries({ queryKey: ['reservations'] });
+                          queryClient.setQueryData<ReservationWithUser[]>(
+                            ['reservations', 'by-room', params.id, selectedDate()],
+                            (old) => (old ?? []).filter((r) => r.seat_id !== seat().id)
+                          );
                           setShowConfirm(null);
                           setSuccessMsg('Reservation cancelled!');
                           setTimeout(() => setSuccessMsg(''), 3000);
@@ -375,8 +381,12 @@ const RoomDetail: Component = () => {
                           setErrorMsg(err instanceof ApiError ? err.message : 'Failed to cancel');
                         });
                       } else if (isAdminReserve && adminTargetUserId()) {
-                        adminCreateReservation.mutateAsync({ date: selectedDate(), seat_id: seat().id!, user_id: adminTargetUserId() }).then(() => {
-                          queryClient.refetchQueries({ queryKey: ['reservations'] });
+                        adminCreateReservation.mutateAsync({ date: selectedDate(), seat_id: seat().id!, user_id: adminTargetUserId() }).then((result) => {
+                          const targetUser = teamMembers().find((u) => u.id === adminTargetUserId());
+                          queryClient.setQueryData<ReservationWithUser[]>(
+                            ['reservations', 'by-room', params.id, selectedDate()],
+                            (old) => [...(old ?? []), { ...result, user_name: targetUser?.name ?? '', seat_label: '' } as unknown as ReservationWithUser]
+                          );
                           setShowConfirm(null);
                           setSuccessMsg('Reservation created for team member!');
                           setTimeout(() => setSuccessMsg(''), 3000);

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/solid-query';
+import { useQuery, useMutation } from '@tanstack/solid-query';
 import { apiFetch } from './client';
 import { queryKeys } from './query-keys';
 import type { definitions } from '@neshiman/api-types';
@@ -24,11 +24,9 @@ export function useReservationsByUserDate(userId: () => string, date: () => stri
 }
 
 export function useCreateReservation() {
-  const qc = useQueryClient();
   return useMutation(() => ({
     mutationFn: (data: CreateReservation) =>
       apiFetch<Reservation>('/v1/reservations', { method: 'POST', body: JSON.stringify(data) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.reservations.all }),
   }));
 }
 
@@ -45,19 +43,15 @@ export function useReservationsByRoomDate(roomId: () => string, date: () => stri
 }
 
 export function useAdminCreateReservation() {
-  const qc = useQueryClient();
   return useMutation(() => ({
     mutationFn: (data: AdminCreateReservation) =>
       apiFetch<Reservation>('/v1/reservations/admin', { method: 'POST', body: JSON.stringify(data) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['reservations'] }),
   }));
 }
 
 export function useCancelReservation() {
-  const qc = useQueryClient();
   return useMutation(() => ({
     mutationFn: (id: string) =>
       apiFetch<DeleteResponse>(`/v1/reservations/${id}`, { method: 'DELETE' }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.reservations.all }),
   }));
 }
