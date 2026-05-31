@@ -33,10 +33,8 @@ func NewReservationService(
 func weekBounds(date domain.Date) (domain.Date, domain.Date) {
 	t := time.Date(date.Year, time.Month(date.Month), date.Day, 0, 0, 0, 0, time.UTC)
 	weekday := t.Weekday()
-	if weekday == time.Sunday {
-		weekday = 7
-	}
-	start := t.AddDate(0, 0, -int(weekday-time.Monday))
+	daysSinceSat := (int(weekday) - int(time.Saturday) + 7) % 7
+	start := t.AddDate(0, 0, -daysSinceSat)
 	end := start.AddDate(0, 0, 6)
 	return dateFromTime(start), dateFromTime(end)
 }

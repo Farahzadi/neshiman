@@ -354,26 +354,26 @@ func TestWeekBounds(t *testing.T) {
 		{
 			name:      "monday",
 			input:     domain.Date{Year: 2026, Month: 5, Day: 18},
-			wantStart: domain.Date{Year: 2026, Month: 5, Day: 18},
-			wantEnd:   domain.Date{Year: 2026, Month: 5, Day: 24},
+			wantStart: domain.Date{Year: 2026, Month: 5, Day: 16},
+			wantEnd:   domain.Date{Year: 2026, Month: 5, Day: 22},
 		},
 		{
 			name:      "wednesday",
 			input:     domain.Date{Year: 2026, Month: 5, Day: 20},
-			wantStart: domain.Date{Year: 2026, Month: 5, Day: 18},
-			wantEnd:   domain.Date{Year: 2026, Month: 5, Day: 24},
+			wantStart: domain.Date{Year: 2026, Month: 5, Day: 16},
+			wantEnd:   domain.Date{Year: 2026, Month: 5, Day: 22},
 		},
 		{
 			name:      "sunday",
 			input:     domain.Date{Year: 2026, Month: 5, Day: 24},
-			wantStart: domain.Date{Year: 2026, Month: 5, Day: 18},
-			wantEnd:   domain.Date{Year: 2026, Month: 5, Day: 24},
+			wantStart: domain.Date{Year: 2026, Month: 5, Day: 23},
+			wantEnd:   domain.Date{Year: 2026, Month: 5, Day: 29},
 		},
 		{
 			name:      "cross month boundary",
 			input:     domain.Date{Year: 2026, Month: 5, Day: 29},
-			wantStart: domain.Date{Year: 2026, Month: 5, Day: 25},
-			wantEnd:   domain.Date{Year: 2026, Month: 5, Day: 31},
+			wantStart: domain.Date{Year: 2026, Month: 5, Day: 23},
+			wantEnd:   domain.Date{Year: 2026, Month: 5, Day: 29},
 		},
 	}
 
