@@ -14,7 +14,7 @@ import {
   ApiError,
 } from '@neshiman/api-client';
 import type { definitions } from '@neshiman/api-types';
-import { unwrap } from 'solid-js/store';
+import { reconcile, unwrap } from 'solid-js/store';
 
 type Seat = definitions['dto.SeatResponse'];
 
@@ -231,7 +231,6 @@ const WeeklyCalendar: Component = () => {
   const reservationMapByDateSeat = createMemo(() => {
     const map = new Map<string, Map<string, definitions['dto.ReservationWithUserResponse']>>();
     for (const r of allReservations()) {
-      console.log(unwrap(r))
       if (!r.seat_id || !r.date) continue;
       if (!map.has(r.date)) map.set(r.date, new Map());
       map.get(r.date)!.set(r.seat_id, r);
@@ -289,7 +288,7 @@ const WeeklyCalendar: Component = () => {
         await cancelReservation.mutateAsync(r!.id!);
         queryClient.setQueryData<RWU[]>(
           ['reservations', 'by-room', roomId, dateStr],
-          (old) => (old ?? []).filter((res) => res.seat_id !== seatId)
+          (old) => (old ?? []).filter((res) => res.seat_id !== seatId),
         );
         setSuccessMsg('Reservation cancelled!');
       } else if (modal.isAdminReserve && selectedUserForReserve()) {
@@ -312,6 +311,7 @@ const WeeklyCalendar: Component = () => {
         await createCrossTeamRequest.mutateAsync({ date: dateStr, target_seat_id: seatId });
         setSuccessMsg('Cross-team request submitted!');
       }
+      queryClient.refetchQueries()
       setSelectedModal(null);
       setSelectedUserForReserve('');
       setTimeout(() => setSuccessMsg(''), 3000);
