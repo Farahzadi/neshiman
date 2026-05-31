@@ -283,7 +283,12 @@ const RoomDetail: Component = () => {
                       }}
                       onClick={() => {
                         if (!currentUserId()) return;
-                        if (isReserved && !isReservedByMe) return;
+                        if (isReserved && !isReservedByMe) {
+                          if (!isAdminUser()) return;
+                          const r = reservationBySeat().get(seat.id!);
+                          const reservedUser = r ? allUsers.data?.find((u) => u.id === r.user_id) : null;
+                          if (!reservedUser || reservedUser.team_id !== currentUser()?.team_id) return;
+                        }
                         if (isPermanentAssigned && !isMyPermanentSeat) return;
                         setShowConfirm(seat);
                       }}
@@ -326,12 +331,15 @@ const RoomDetail: Component = () => {
           const ownTeam = isOwnTeam(seat());
           const isReservedByMe = myReservedSeatIds().has(seat().id);
           const isAdminReserve = ownTeam && !isReservedByMe && isAdminUser();
+          const adminCancelReservation = !isReservedByMe && isAdminUser() ? reservationBySeat().get(seat().id!) : null;
+          const adminCancelTarget = adminCancelReservation ? allUsers.data?.find((u) => u.id === adminCancelReservation.user_id) : null;
+          const isAdminCancel = !!adminCancelTarget && adminCancelTarget.team_id === currentUser()?.team_id;
           const [adminTargetUserId, setAdminTargetUserId] = createSignal('');
           return (
             <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowConfirm(null)}>
               <div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
                 <h3 class="text-lg font-bold text-gray-900 mb-2">
-                  {isReservedByMe ? 'Cancel Reservation?' : isAdminReserve ? 'Reserve for Team Member' : ownTeam ? 'Reserve Seat' : 'Request Seat'}
+                  {isReservedByMe ? 'Cancel Reservation?' : isAdminCancel ? `Cancel ${adminCancelReservation?.user_name ?? 'user'}'s Reservation?` : isAdminReserve ? 'Reserve for Team Member' : ownTeam ? 'Reserve Seat' : 'Request Seat'}
                 </h3>
                 <div class="space-y-2 mb-5 text-sm text-gray-600">
                   <p><span class="font-medium text-gray-900">Seat:</span> {seat().label}</p>
@@ -370,6 +378,18 @@ const RoomDetail: Component = () => {
                       if (isReservedByMe) {
                         const res = reservationBySeat().get(seat().id!);
                         cancelReservation.mutateAsync(res?.id ?? '').then(() => {
+                          queryClient.setQueryData<ReservationWithUser[]>(
+                            ['reservations', 'by-room', params.id, selectedDate()],
+                            (old) => (old ?? []).filter((r) => r.seat_id !== seat().id)
+                          );
+                          setShowConfirm(null);
+                          setSuccessMsg('Reservation cancelled!');
+                          setTimeout(() => setSuccessMsg(''), 3000);
+                        }).catch((err) => {
+                          setErrorMsg(err instanceof ApiError ? err.message : 'Failed to cancel');
+                        });
+                      } else if (isAdminCancel) {
+                        cancelReservation.mutateAsync(adminCancelReservation?.id ?? '').then(() => {
                           queryClient.setQueryData<ReservationWithUser[]>(
                             ['reservations', 'by-room', params.id, selectedDate()],
                             (old) => (old ?? []).filter((r) => r.seat_id !== seat().id)

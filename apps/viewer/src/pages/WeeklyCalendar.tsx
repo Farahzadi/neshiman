@@ -104,7 +104,7 @@ const WeeklyCalendar: Component = () => {
     try { localStorage.setItem('neshiman_calendar_room', value); } catch { /* localStorage unavailable */ }
   };
   const [weekOffset, setWeekOffset] = createSignal(0);
-  const [selectedModal, setSelectedModal] = createSignal<{ seat: Seat; date: Date; isReservedByMe: boolean; isAdminReserve?: boolean } | null>(null);
+  const [selectedModal, setSelectedModal] = createSignal<{ seat: Seat; date: Date; isReservedByMe: boolean; isAdminReserve?: boolean; isAdminCancel?: boolean } | null>(null);
   const [selectedUserForReserve, setSelectedUserForReserve] = createSignal('');
   const [successMsg, setSuccessMsg] = createSignal('');
   const [errMsg, setErrMsg] = createSignal('');
@@ -263,6 +263,12 @@ const WeeklyCalendar: Component = () => {
 
     if (r && r.user_id === currentUserId()) {
       setSelectedModal({ seat, date, isReservedByMe: true });
+    } else if (r && isAdminUser()) {
+      const reservedUser = allUsers.data?.find((u) => u.id === r.user_id);
+      if (reservedUser?.team_id === currentUser()?.team_id) {
+        setSelectedModal({ seat, date, isReservedByMe: false, isAdminCancel: true });
+        return;
+      }
     } else if (!r && isOwnTeam(seat) && isAdminUser()) {
       setSelectedModal({ seat, date, isReservedByMe: false, isAdminReserve: true });
       setSelectedUserForReserve('');
@@ -288,7 +294,14 @@ const WeeklyCalendar: Component = () => {
         await cancelReservation.mutateAsync(r!.id!);
         queryClient.setQueryData<RWU[]>(
           ['reservations', 'by-room', roomId, dateStr],
-          (old) => (old ?? []).filter((res) => res.seat_id !== seatId),
+          (old) => (old ?? []).filter((res) => res.seat_id !== seatId)
+        );
+        setSuccessMsg('Reservation cancelled!');
+      } else if (modal.isAdminCancel) {
+        await cancelReservation.mutateAsync(r!.id!);
+        queryClient.setQueryData<RWU[]>(
+          ['reservations', 'by-room', roomId, dateStr],
+          (old) => (old ?? []).filter((res) => res.seat_id !== seatId)
         );
         setSuccessMsg('Reservation cancelled!');
       } else if (modal.isAdminReserve && selectedUserForReserve()) {
@@ -563,7 +576,7 @@ const WeeklyCalendar: Component = () => {
           <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setSelectedModal(null)}>
             <div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
               <h3 class="text-lg font-bold text-gray-900 mb-2">
-                {modal().isReservedByMe ? 'Cancel Reservation?' : modal().isAdminReserve ? 'Reserve for Team Member' : isOwnTeam(modal().seat) ? 'Reserve Seat' : 'Request Seat'}
+                {modal().isReservedByMe ? 'Cancel Reservation?' : modal().isAdminCancel ? `Cancel ${getReservation(formatDate(modal().date), modal().seat.id!)?.user_name ?? 'user'}'s Reservation?` : modal().isAdminReserve ? 'Reserve for Team Member' : isOwnTeam(modal().seat) ? 'Reserve Seat' : 'Request Seat'}
               </h3>
               <div class="space-y-2 mb-5 text-sm text-gray-600">
                 <p><span class="font-medium text-gray-900">Seat:</span> {modal().seat.label}</p>
