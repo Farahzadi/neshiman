@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -24,12 +25,17 @@ func NewSeatRepository(pool *pgxpool.Pool) ports.SeatRepository {
 }
 
 func (r *SeatRepository) Create(ctx context.Context, seat *domain.Seat) error {
+	var assignedUserID pgtype.UUID
+	if seat.AssignedUserID != nil {
+		assignedUserID = pgtype.UUID{Bytes: *seat.AssignedUserID, Valid: true}
+	}
 	result, err := r.q.CreateSeat(ctx, sqlc.CreateSeatParams{
-		RoomID: seat.RoomID,
-		TeamID: seat.TeamID,
-		Label:  seat.Label,
-		PosX:   int32(seat.Position.X),
-		PosY:   int32(seat.Position.Y),
+		RoomID:         seat.RoomID,
+		TeamID:         seat.TeamID,
+		Label:          seat.Label,
+		PosX:           int32(seat.Position.X),
+		PosY:           int32(seat.Position.Y),
+		AssignedUserID: assignedUserID,
 	})
 	if err != nil {
 		return err
@@ -46,16 +52,18 @@ func (r *SeatRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Sea
 		}
 		return nil, err
 	}
-	return &domain.Seat{
-		ID:     result.ID,
-		RoomID: result.RoomID,
-		TeamID: result.TeamID,
-		Label:  result.Label,
-		Position: domain.Position{
-			X: int(result.PosX),
-			Y: int(result.PosY),
-		},
-	}, nil
+	return rowToSeat(result), nil
+}
+
+func (r *SeatRepository) GetByAssignedUser(ctx context.Context, userID uuid.UUID) (*domain.Seat, error) {
+	result, err := r.q.GetSeatByAssignedUser(ctx, pgtype.UUID{Bytes: userID, Valid: true})
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, domain.ErrSeatNotFound
+		}
+		return nil, err
+	}
+	return rowToSeat(result), nil
 }
 
 func (r *SeatRepository) ListByRoom(ctx context.Context, roomID uuid.UUID) ([]domain.Seat, error) {
@@ -65,16 +73,7 @@ func (r *SeatRepository) ListByRoom(ctx context.Context, roomID uuid.UUID) ([]do
 	}
 	seats := make([]domain.Seat, len(results))
 	for i, row := range results {
-		seats[i] = domain.Seat{
-			ID:     row.ID,
-			RoomID: row.RoomID,
-			TeamID: row.TeamID,
-			Label:  row.Label,
-			Position: domain.Position{
-				X: int(row.PosX),
-				Y: int(row.PosY),
-			},
-		}
+		seats[i] = *rowToSeat(row)
 	}
 	return seats, nil
 }
@@ -97,6 +96,31 @@ func (r *SeatRepository) DeleteByRoom(ctx context.Context, roomID uuid.UUID) err
 	return r.q.SoftDeleteSeatsByRoom(ctx, roomID)
 }
 
+func (r *SeatRepository) AssignUser(ctx context.Context, seatID, userID uuid.UUID) (*domain.Seat, error) {
+	result, err := r.q.AssignSeat(ctx, sqlc.AssignSeatParams{
+		ID:             seatID,
+		AssignedUserID: pgtype.UUID{Bytes: userID, Valid: true},
+	})
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, domain.ErrSeatNotFound
+		}
+		return nil, err
+	}
+	return rowToSeat(result), nil
+}
+
+func (r *SeatRepository) UnassignUser(ctx context.Context, seatID uuid.UUID) (*domain.Seat, error) {
+	result, err := r.q.UnassignSeat(ctx, seatID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, domain.ErrSeatNotFound
+		}
+		return nil, err
+	}
+	return rowToSeat(result), nil
+}
+
 func (r *SeatRepository) BulkSync(ctx context.Context, roomID uuid.UUID, seats []domain.Seat) ([]domain.Seat, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -116,22 +140,23 @@ func (r *SeatRepository) BulkSync(ctx context.Context, roomID uuid.UUID, seats [
 		existingMap[s.ID] = struct{}{}
 	}
 
-	incomingIDs := make(map[uuid.UUID]struct{})
+		incomingIDs := make(map[uuid.UUID]struct{})
 	var result []domain.Seat
 
 	for _, seat := range seats {
 		if seat.ID == uuid.Nil {
 			created, err := q.CreateSeat(ctx, sqlc.CreateSeatParams{
-				RoomID: roomID,
-				TeamID: seat.TeamID,
-				Label:  seat.Label,
-				PosX:   int32(seat.Position.X),
-				PosY:   int32(seat.Position.Y),
+				RoomID:         roomID,
+				TeamID:         seat.TeamID,
+				Label:          seat.Label,
+				PosX:           int32(seat.Position.X),
+				PosY:           int32(seat.Position.Y),
+				AssignedUserID: pgtype.UUID{},
 			})
 			if err != nil {
 				return nil, err
 			}
-			result = append(result, rowToSeat(created))
+			result = append(result, *rowToSeat(created))
 		} else {
 			incomingIDs[seat.ID] = struct{}{}
 			if _, exists := existingMap[seat.ID]; exists {
@@ -145,7 +170,7 @@ func (r *SeatRepository) BulkSync(ctx context.Context, roomID uuid.UUID, seats [
 				if err != nil {
 					return nil, err
 				}
-				result = append(result, rowToSeat(updated))
+				result = append(result, *rowToSeat(updated))
 			}
 		}
 	}
@@ -165,8 +190,13 @@ func (r *SeatRepository) BulkSync(ctx context.Context, roomID uuid.UUID, seats [
 	return result, nil
 }
 
-func rowToSeat(row sqlc.Seat) domain.Seat {
-	return domain.Seat{
+func rowToSeat(row sqlc.Seat) *domain.Seat {
+	var assignedUserID *uuid.UUID
+	if row.AssignedUserID.Valid {
+		id := uuid.UUID(row.AssignedUserID.Bytes)
+		assignedUserID = &id
+	}
+	return &domain.Seat{
 		ID:     row.ID,
 		RoomID: row.RoomID,
 		TeamID: row.TeamID,
@@ -175,5 +205,6 @@ func rowToSeat(row sqlc.Seat) domain.Seat {
 			X: int(row.PosX),
 			Y: int(row.PosY),
 		},
+		AssignedUserID: assignedUserID,
 	}
 }

@@ -25,4 +25,6 @@ var (
 	ErrCannotChangeSuperAdmin   = errors.New("cannot change the superadmin user")
 	ErrPastDate                 = errors.New("cannot reserve for a past date")
 	ErrCannotModify            = errors.New("cannot modify this resource")
+	ErrSeatPermanentlyAssigned = errors.New("seat is permanently assigned to another user")
+	ErrUserAlreadyAssigned     = errors.New("user is already assigned to another seat")
 )

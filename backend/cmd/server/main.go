@@ -55,7 +55,7 @@ func main() {
 	txManager := postgres.NewTxManager(pool)
 
 	roomSvc := application.NewRoomService(roomRepo, seatRepo)
-	seatSvc := application.NewSeatService(seatRepo)
+	seatSvc := application.NewSeatService(seatRepo, userRepo)
 	userSvc := application.NewUserService(userRepo)
 	reservationSvc := application.NewReservationService(reservationRepo, seatRepo, userRepo, txManager)
 	teamSvc := application.NewTeamService(teamRepo)

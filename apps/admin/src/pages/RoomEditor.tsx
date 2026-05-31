@@ -5,7 +5,10 @@ import {
   useRoom,
   useSeatsByRoom,
   useBulkSyncSeats,
+  useAssignSeat,
+  useUnassignSeat,
   useTeams,
+  useUsers,
   ApiError,
 } from '@neshiman/api-client';
 import type { definitions } from '@neshiman/api-types';
@@ -75,7 +78,10 @@ const RoomEditor: Component = () => {
   const room = useRoom(() => params.id);
   const serverSeats = useSeatsByRoom(() => params.id);
   const teams = useTeams();
+  const allUsers = useUsers(() => '');
   const bulkSync = useBulkSyncSeats();
+  const assignSeat = useAssignSeat();
+  const unassignSeat = useUnassignSeat();
 
   const [localSeats, setLocalSeats] = createStore<Seat[]>([]);
 
@@ -265,6 +271,29 @@ const RoomEditor: Component = () => {
     setLocalSeats(idx, field as never, value as never);
   };
 
+  const [assignUserId, setAssignUserId] = createSignal('');
+
+  const handleAssignUser = async () => {
+    const seat = selectedSeat();
+    if (!seat?.id || !assignUserId()) return;
+    try {
+      await assignSeat.mutateAsync({ id: seat.id, data: { user_id: assignUserId() } });
+      setAssignUserId('');
+    } catch {
+      // error handled via toast-like inline message if needed
+    }
+  };
+
+  const handleUnassignUser = async () => {
+    const seat = selectedSeat();
+    if (!seat?.id) return;
+    try {
+      await unassignSeat.mutateAsync(seat.id);
+    } catch {
+      // error handled via toast-like inline message if needed
+    }
+  };
+
   return (
     <div class="flex flex-col flex-1 min-h-0">
       <div class="flex items-center justify-between px-6 py-3 border-b bg-white shrink-0 shadow-sm">
@@ -378,6 +407,47 @@ const RoomEditor: Component = () => {
                 <div>
                   <label class="block text-xs font-medium text-gray-500 mb-1">Position</label>
                   <p class="text-sm text-gray-700">({seat().pos_x}, {seat().pos_y})</p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1">Permanent Assignment</label>
+                  <Show when={seat().assigned_user_id} fallback={
+                    <div class="flex gap-2">
+                      <select
+                        value={assignUserId()}
+                        onChange={(e) => setAssignUserId(e.currentTarget.value)}
+                        class="flex-1 border rounded-md px-2 py-1.5 text-xs"
+                      >
+                        <option value="">Select user...</option>
+                        <For each={allUsers.data}>
+                          {(u) => <option value={u.id!}>{u.name}</option>}
+                        </For>
+                      </select>
+                      <button
+                        onClick={handleAssignUser}
+                        disabled={!assignUserId() || assignSeat.isPending}
+                        class="px-2.5 py-1.5 bg-blue-600 text-white rounded-md text-xs disabled:opacity-40 hover:bg-blue-700 transition-colors shrink-0"
+                      >
+                        Assign
+                      </button>
+                    </div>
+                  }>
+                    <div class="flex items-center justify-between bg-gray-50 rounded-md px-3 py-2 border">
+                      <div class="flex items-center gap-2 min-w-0">
+                        <div class="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                        <span class="text-sm text-gray-700 truncate">
+                          {allUsers.data?.find((u) => u.id === seat().assigned_user_id)?.name ?? seat().assigned_user_name ?? seat().assigned_user_id}
+                        </span>
+                      </div>
+                      <button
+                        onClick={handleUnassignUser}
+                        disabled={unassignSeat.isPending}
+                        class="text-xs text-red-600 hover:text-red-800 hover:underline transition-colors shrink-0 ml-2"
+                      >
+                        {unassignSeat.isPending ? '...' : 'Remove'}
+                      </button>
+                    </div>
+                  </Show>
                 </div>
 
                 <hr class="my-3" />

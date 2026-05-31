@@ -85,3 +85,7 @@ type AdminCreateReservationRequest struct {
 	SeatID string `json:"seat_id"`
 	Date   string `json:"date"`
 }
+
+type AssignSeatRequest struct {
+	UserID string `json:"user_id"`
+}

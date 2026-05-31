@@ -24,22 +24,28 @@ func (m *mockRoomRepo) Delete(ctx context.Context, id uuid.UUID) error { return 
 func (m *mockRoomRepo) assertImplementation() { var _ ports.RoomRepository = m }
 
 type mockSeatRepo struct {
-	createFn      func(ctx context.Context, seat *domain.Seat) error
-	getByIDFn     func(ctx context.Context, id uuid.UUID) (*domain.Seat, error)
-	listByRoomFn  func(ctx context.Context, roomID uuid.UUID) ([]domain.Seat, error)
-	updateFn      func(ctx context.Context, seat *domain.Seat) error
-	deleteFn      func(ctx context.Context, id uuid.UUID) error
-	deleteByRoomFn func(ctx context.Context, roomID uuid.UUID) error
-	bulkSyncFn    func(ctx context.Context, roomID uuid.UUID, seats []domain.Seat) ([]domain.Seat, error)
+	createFn             func(ctx context.Context, seat *domain.Seat) error
+	getByIDFn            func(ctx context.Context, id uuid.UUID) (*domain.Seat, error)
+	getByAssignedUserFn  func(ctx context.Context, userID uuid.UUID) (*domain.Seat, error)
+	listByRoomFn         func(ctx context.Context, roomID uuid.UUID) ([]domain.Seat, error)
+	updateFn             func(ctx context.Context, seat *domain.Seat) error
+	deleteFn             func(ctx context.Context, id uuid.UUID) error
+	deleteByRoomFn       func(ctx context.Context, roomID uuid.UUID) error
+	bulkSyncFn           func(ctx context.Context, roomID uuid.UUID, seats []domain.Seat) ([]domain.Seat, error)
+	assignUserFn         func(ctx context.Context, seatID, userID uuid.UUID) (*domain.Seat, error)
+	unassignUserFn       func(ctx context.Context, seatID uuid.UUID) (*domain.Seat, error)
 }
 
 func (m *mockSeatRepo) Create(ctx context.Context, seat *domain.Seat) error { return m.createFn(ctx, seat) }
 func (m *mockSeatRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Seat, error) { return m.getByIDFn(ctx, id) }
+func (m *mockSeatRepo) GetByAssignedUser(ctx context.Context, userID uuid.UUID) (*domain.Seat, error) { return m.getByAssignedUserFn(ctx, userID) }
 func (m *mockSeatRepo) ListByRoom(ctx context.Context, roomID uuid.UUID) ([]domain.Seat, error) { return m.listByRoomFn(ctx, roomID) }
 func (m *mockSeatRepo) Update(ctx context.Context, seat *domain.Seat) error { return m.updateFn(ctx, seat) }
 func (m *mockSeatRepo) Delete(ctx context.Context, id uuid.UUID) error { return m.deleteFn(ctx, id) }
 func (m *mockSeatRepo) DeleteByRoom(ctx context.Context, roomID uuid.UUID) error { return m.deleteByRoomFn(ctx, roomID) }
 func (m *mockSeatRepo) BulkSync(ctx context.Context, roomID uuid.UUID, seats []domain.Seat) ([]domain.Seat, error) { return m.bulkSyncFn(ctx, roomID, seats) }
+func (m *mockSeatRepo) AssignUser(ctx context.Context, seatID, userID uuid.UUID) (*domain.Seat, error) { return m.assignUserFn(ctx, seatID, userID) }
+func (m *mockSeatRepo) UnassignUser(ctx context.Context, seatID uuid.UUID) (*domain.Seat, error) { return m.unassignUserFn(ctx, seatID) }
 func (m *mockSeatRepo) assertImplementation() { var _ ports.SeatRepository = m }
 
 type mockUserRepo struct {

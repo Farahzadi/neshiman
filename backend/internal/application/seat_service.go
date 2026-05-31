@@ -10,10 +10,11 @@ import (
 
 type SeatService struct {
 	seats ports.SeatRepository
+	users ports.UserRepository
 }
 
-func NewSeatService(seats ports.SeatRepository) *SeatService {
-	return &SeatService{seats: seats}
+func NewSeatService(seats ports.SeatRepository, users ports.UserRepository) *SeatService {
+	return &SeatService{seats: seats, users: users}
 }
 
 func (s *SeatService) CreateSeat(ctx context.Context, roomID, teamID uuid.UUID, label string, posX, posY int) (*domain.Seat, error) {
@@ -60,4 +61,59 @@ func (s *SeatService) BulkSyncSeats(ctx context.Context, roomID uuid.UUID, seats
 		seats[i].RoomID = roomID
 	}
 	return s.seats.BulkSync(ctx, roomID, seats)
+}
+
+// AssignUser permanently assigns a user to a seat (superadmin only).
+// A user can only be assigned to one seat at a time.
+func (s *SeatService) AssignUser(ctx context.Context, callerID, seatID, userID uuid.UUID) (*domain.Seat, error) {
+	caller, err := s.users.GetByID(ctx, callerID)
+	if err != nil {
+		return nil, domain.ErrUnauthorized
+	}
+	if !caller.IsSuperAdmin() {
+		return nil, domain.ErrForbidden
+	}
+
+	targetUser, err := s.users.GetByID(ctx, userID)
+	if err != nil {
+		return nil, domain.ErrUserNotFound
+	}
+
+	// Check user does not already have a permanent seat
+	existing, err := s.seats.GetByAssignedUser(ctx, userID)
+	if err != nil && err != domain.ErrSeatNotFound {
+		return nil, err
+	}
+	if existing != nil {
+		return nil, domain.ErrUserAlreadyAssigned
+	}
+
+	seat, err := s.seats.GetByID(ctx, seatID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Assign the seat
+	seat, err = s.seats.AssignUser(ctx, seatID, targetUser.ID)
+	if err != nil {
+		return nil, err
+	}
+	return seat, nil
+}
+
+// UnassignUser removes the permanent user assignment from a seat (superadmin only).
+func (s *SeatService) UnassignUser(ctx context.Context, callerID, seatID uuid.UUID) (*domain.Seat, error) {
+	caller, err := s.users.GetByID(ctx, callerID)
+	if err != nil {
+		return nil, domain.ErrUnauthorized
+	}
+	if !caller.IsSuperAdmin() {
+		return nil, domain.ErrForbidden
+	}
+
+	seat, err := s.seats.UnassignUser(ctx, seatID)
+	if err != nil {
+		return nil, err
+	}
+	return seat, nil
 }

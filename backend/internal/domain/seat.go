@@ -7,12 +7,13 @@ import (
 )
 
 type Seat struct {
-	ID        uuid.UUID
-	RoomID    uuid.UUID
-	TeamID    uuid.UUID
-	Label     string
-	Position  Position
-	DeletedAt *time.Time
+	ID              uuid.UUID
+	RoomID          uuid.UUID
+	TeamID          uuid.UUID
+	Label           string
+	Position        Position
+	AssignedUserID  *uuid.UUID
+	DeletedAt       *time.Time
 }
 
 func NewSeat(roomID, teamID uuid.UUID, label string, pos Position) (*Seat, error) {
@@ -27,4 +28,8 @@ func NewSeat(roomID, teamID uuid.UUID, label string, pos Position) (*Seat, error
 
 func (s *Seat) MoveTo(pos Position) {
 	s.Position = pos
+}
+
+func (s *Seat) IsPermanentlyAssigned() bool {
+	return s.AssignedUserID != nil
 }

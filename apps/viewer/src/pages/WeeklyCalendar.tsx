@@ -6,6 +6,7 @@ import {
   useReservationsByRoomDate,
   useCreateReservation,
   useCancelReservation,
+  useAdminCreateReservation,
   useCreateCrossTeamRequest,
   useTeams,
   useUsers,
@@ -91,7 +92,8 @@ const WeeklyCalendar: Component = () => {
 
   const [selectedRoomId, setSelectedRoomId] = createSignal('');
   const [weekOffset, setWeekOffset] = createSignal(0);
-  const [selectedModal, setSelectedModal] = createSignal<{ seat: Seat; date: Date; isReservedByMe: boolean } | null>(null);
+  const [selectedModal, setSelectedModal] = createSignal<{ seat: Seat; date: Date; isReservedByMe: boolean; isAdminReserve?: boolean } | null>(null);
+  const [selectedUserForReserve, setSelectedUserForReserve] = createSignal('');
   const [msg, setMsg] = createSignal('');
 
   const currentUserId = () => getCurrentUserId();
@@ -149,7 +151,19 @@ const WeeklyCalendar: Component = () => {
 
   const createReservation = useCreateReservation();
   const cancelReservation = useCancelReservation();
+  const adminCreateReservation = useAdminCreateReservation();
   const createCrossTeamRequest = useCreateCrossTeamRequest();
+
+  const isAdminUser = createMemo(() => {
+    const role = currentUser()?.role;
+    return role === 'superadmin' || role === 'team_admin';
+  });
+
+  const teamMembers = createMemo(() => {
+    const teamId = currentUser()?.team_id;
+    if (!teamId) return [];
+    return allUsers.data?.filter((u) => u.team_id === teamId) ?? [];
+  });
 
   const teamColorMap = createMemo(() => {
     const map = new Map<string, number>();
@@ -195,14 +209,20 @@ const WeeklyCalendar: Component = () => {
     if (!currentUserId()) return;
     if (isPastDate(date) && r?.user_id !== currentUserId()) return;
 
+    const isMyPermanentSeat = !!seat.assigned_user_id && seat.assigned_user_id === currentUserId();
+
+    if (isMyPermanentSeat) {
+      return;
+    }
+
     if (r && r.user_id === currentUserId()) {
-      // My reservation -> cancel
       setSelectedModal({ seat, date, isReservedByMe: true });
+    } else if (!r && isOwnTeam(seat) && isAdminUser()) {
+      setSelectedModal({ seat, date, isReservedByMe: false, isAdminReserve: true });
+      setSelectedUserForReserve('');
     } else if (!r && isOwnTeam(seat)) {
-      // Available own-team seat -> reserve
       setSelectedModal({ seat, date, isReservedByMe: false });
     } else if (!r) {
-      // Available other-team seat -> cross-team request
       setSelectedModal({ seat, date, isReservedByMe: false });
     }
   };
@@ -219,6 +239,9 @@ const WeeklyCalendar: Component = () => {
       if (modal.isReservedByMe) {
         await cancelReservation.mutateAsync(r!.id!);
         setMsg('Reservation cancelled!');
+      } else if (modal.isAdminReserve && selectedUserForReserve()) {
+        await adminCreateReservation.mutateAsync({ date: dateStr, seat_id: seatId, user_id: selectedUserForReserve() });
+        setMsg('Reservation created for team member!');
       } else if (isOwnTeam(modal.seat)) {
         await createReservation.mutateAsync({ date: dateStr, seat_id: seatId });
         setMsg('Reservation confirmed!');
@@ -227,6 +250,7 @@ const WeeklyCalendar: Component = () => {
         setMsg('Cross-team request submitted!');
       }
       setSelectedModal(null);
+      setSelectedUserForReserve('');
       setTimeout(() => setMsg(''), 3000);
     } catch (err) {
       setMsg(err instanceof ApiError ? err.message : 'Failed');
@@ -320,14 +344,28 @@ const WeeklyCalendar: Component = () => {
                 Seat
               </div>
               <For each={workDays()}>
-                {(day) => (
-                  <div class="w-28 shrink-0 px-3 py-3 text-center border-r border-gray-200 last:border-r-0">
-                    <div class="text-xs font-medium text-gray-500">
-                      {DAY_NAMES[Object.keys(DAY_NAMES)[day.getDay()]] ?? day.toLocaleDateString('en', { weekday: 'short' })}
+                {(day) => {
+                  const today = todayDate();
+                  const isToday = day.getFullYear() === today.getFullYear() &&
+                    day.getMonth() === today.getMonth() &&
+                    day.getDate() === today.getDate();
+                  return (
+                    <div class="w-28 shrink-0 px-3 py-3 text-center border-r border-gray-200 last:border-r-0"
+                      classList={{ 'bg-blue-50 border-l-2 border-l-blue-400': isToday }}
+                    >
+                      <div class={`text-xs font-medium ${isToday ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
+                        {DAY_NAMES[Object.keys(DAY_NAMES)[day.getDay()]] ?? day.toLocaleDateString('en', { weekday: 'short' })}
+                      </div>
+                      <div class={`text-sm font-bold ${isToday ? 'text-blue-600' : 'text-gray-800'}`}>
+                        {isToday ? (
+                          <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white text-xs">
+                            {day.getDate()}
+                          </span>
+                        ) : day.getDate()}
+                      </div>
                     </div>
-                    <div class="text-sm font-bold text-gray-800">{day.getDate()}</div>
-                  </div>
-                )}
+                  );
+                }}
               </For>
             </div>
 
@@ -348,35 +386,56 @@ const WeeklyCalendar: Component = () => {
                       const isMine = r?.user_id === currentUserId();
                       const past = isPastDate(day);
                       const ownTeam = isOwnTeam(seat);
+                      const isPermanentAssigned = !!seat.assigned_user_id;
+                      const isMyPermanentSeat = isPermanentAssigned && seat.assigned_user_id === currentUserId();
+                      const today = todayDate();
+                      const isToday = day.getFullYear() === today.getFullYear() &&
+                        day.getMonth() === today.getMonth() &&
+                        day.getDate() === today.getDate();
 
                       let cellClass = '';
-                      if (r && isMine) {
+                      if (isMyPermanentSeat) {
+                        cellClass = 'bg-purple-100 border-purple-300 text-purple-700';
+                      } else if (isPermanentAssigned) {
+                        cellClass = 'bg-purple-50 border-purple-200 text-gray-400';
+                      } else if (r && isMine) {
                         cellClass = 'bg-blue-100 border-blue-300';
                       } else if (r) {
                         cellClass = 'bg-gray-100 border-gray-200 text-gray-400';
                       } else if (past) {
                         cellClass = 'bg-gray-50 border-gray-100 text-gray-300';
                       } else if (ownTeam) {
-                        cellClass = 'bg-green-50 border-green-200 hover:bg-green-100 cursor-pointer';
+                        cellClass = isToday ? 'bg-blue-50 border-blue-200 hover:bg-blue-100 cursor-pointer' : 'bg-green-50 border-green-200 hover:bg-green-100 cursor-pointer';
                       } else {
-                        cellClass = 'bg-amber-50 border-amber-200 hover:bg-amber-100 cursor-pointer';
+                        cellClass = isToday ? 'bg-blue-50 border-blue-200 hover:bg-blue-100 cursor-pointer' : 'bg-amber-50 border-amber-200 hover:bg-amber-100 cursor-pointer';
                       }
+
+                      const showAction = !isPermanentAssigned || isMyPermanentSeat;
 
                       return (
                         <div
                           class={`w-28 shrink-0 px-3 py-3 text-xs text-center border-r border-gray-100 last:border-r-0 transition-colors ${cellClass}`}
-                          onClick={() => handleCellClick(seat, day, r)}
+                          classList={{
+                            'border-l-2 border-l-blue-400': isToday,
+                          }}
+                          onClick={() => showAction ? handleCellClick(seat, day, r) : undefined}
                         >
-                          <Show when={r && isMine}>
+                          <Show when={isMyPermanentSeat}>
+                            <span class="text-purple-700 font-medium">✦ Permanent</span>
+                          </Show>
+                          <Show when={isPermanentAssigned && !isMyPermanentSeat}>
+                            <span class="text-gray-400">{seat.assigned_user_name?.slice(0, 12) ?? 'Assigned'}</span>
+                          </Show>
+                          <Show when={!isPermanentAssigned && r && isMine}>
                             <span class="text-blue-700 font-medium">✓ Reserved</span>
                           </Show>
-                          <Show when={r && !isMine}>
+                          <Show when={!isPermanentAssigned && r && !isMine}>
                             <span class="text-gray-400">{r?.user_name?.slice(0, 12) ?? 'Reserved'}</span>
                           </Show>
-                          <Show when={!r && !past}>
+                          <Show when={!isPermanentAssigned && !r && !past}>
                             <span class={ownTeam ? 'text-green-600' : 'text-amber-600'}>{ownTeam ? 'Available' : 'Cross-team'}</span>
                           </Show>
-                          <Show when={!r && past}>
+                          <Show when={!isPermanentAssigned && !r && past}>
                             <span class="text-gray-300">—</span>
                           </Show>
                         </div>
@@ -408,6 +467,9 @@ const WeeklyCalendar: Component = () => {
         <div class="flex items-center gap-1.5">
           <div class="w-3 h-3 rounded bg-gray-100 border border-gray-200" /> Reserved
         </div>
+        <div class="flex items-center gap-1.5">
+          <div class="w-3 h-3 rounded bg-purple-100 border border-purple-300" /> Permanent seat
+        </div>
       </div>
 
       {/* Confirmation modal */}
@@ -416,13 +478,28 @@ const WeeklyCalendar: Component = () => {
           <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setSelectedModal(null)}>
             <div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
               <h3 class="text-lg font-bold text-gray-900 mb-2">
-                {modal().isReservedByMe ? 'Cancel Reservation?' : isOwnTeam(modal().seat) ? 'Reserve Seat' : 'Request Seat'}
+                {modal().isReservedByMe ? 'Cancel Reservation?' : modal().isAdminReserve ? 'Reserve for Team Member' : isOwnTeam(modal().seat) ? 'Reserve Seat' : 'Request Seat'}
               </h3>
               <div class="space-y-2 mb-5 text-sm text-gray-600">
                 <p><span class="font-medium text-gray-900">Seat:</span> {modal().seat.label}</p>
                 <p><span class="font-medium text-gray-900">Date:</span> {formatDate(modal().date)}</p>
                 <p><span class="font-medium text-gray-900">Team:</span> {teams.data?.find((t) => t.id === modal().seat.team_id)?.name ?? 'Unknown'}</p>
-                <Show when={!isOwnTeam(modal().seat) && !modal().isReservedByMe}>
+                <Show when={modal().isAdminReserve}>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Reserve for</label>
+                    <select
+                      value={selectedUserForReserve()}
+                      onChange={(e) => setSelectedUserForReserve(e.currentTarget.value)}
+                      class="w-full border rounded-md px-2.5 py-1.5 text-sm"
+                    >
+                      <option value="">Select a team member...</option>
+                      <For each={teamMembers()}>
+                        {(u) => <option value={u.id!}>{u.name}</option>}
+                      </For>
+                    </select>
+                  </div>
+                </Show>
+                <Show when={!isOwnTeam(modal().seat) && !modal().isReservedByMe && !modal().isAdminReserve}>
                   <div class="mt-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
                     This seat belongs to another team. A cross-team request will be sent for approval.
                   </div>
@@ -437,10 +514,10 @@ const WeeklyCalendar: Component = () => {
                 </button>
                 <button
                   onClick={handleConfirm}
-                  disabled={createReservation.isPending || cancelReservation.isPending || createCrossTeamRequest.isPending}
+                  disabled={createReservation.isPending || cancelReservation.isPending || createCrossTeamRequest.isPending || adminCreateReservation.isPending || (modal().isAdminReserve && !selectedUserForReserve())}
                   class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {createReservation.isPending || cancelReservation.isPending || createCrossTeamRequest.isPending ? 'Processing...' : 'Confirm'}
+                  {createReservation.isPending || cancelReservation.isPending || createCrossTeamRequest.isPending || adminCreateReservation.isPending ? 'Processing...' : 'Confirm'}
                 </button>
               </div>
             </div>

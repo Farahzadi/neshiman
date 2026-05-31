@@ -512,6 +512,56 @@ export interface paths {
       };
     };
   };
+  "/seats/{id}/assign": {
+    post: {
+      parameters: {
+        path: {
+          /** Seat ID */
+          id: string;
+        };
+        body: {
+          /** User ID to assign */
+          request: definitions["dto.AssignSeatRequest"];
+        };
+      };
+      responses: {
+        /** OK */
+        200: {
+          schema: definitions["dto.SeatResponse"];
+        };
+        /** Bad Request */
+        400: {
+          schema: string;
+        };
+        /** Forbidden */
+        403: {
+          schema: string;
+        };
+      };
+    };
+    delete: {
+      parameters: {
+        path: {
+          /** Seat ID */
+          id: string;
+        };
+      };
+      responses: {
+        /** OK */
+        200: {
+          schema: definitions["dto.SeatResponse"];
+        };
+        /** Bad Request */
+        400: {
+          schema: string;
+        };
+        /** Forbidden */
+        403: {
+          schema: string;
+        };
+      };
+    };
+  };
   "/seats/{id}/move": {
     put: {
       parameters: {
@@ -822,6 +872,9 @@ export interface definitions {
     seat_id?: string;
     user_id?: string;
   };
+  "dto.AssignSeatRequest": {
+    user_id?: string;
+  };
   "dto.BulkSeatItem": {
     id?: string;
     label?: string;
@@ -913,6 +966,8 @@ export interface definitions {
     updated_at?: string;
   };
   "dto.SeatResponse": {
+    assigned_user_id?: string;
+    assigned_user_name?: string;
     id?: string;
     label?: string;
     pos_x?: number;

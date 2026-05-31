@@ -9,20 +9,51 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const assignSeat = `-- name: AssignSeat :one
+UPDATE seats SET assigned_user_id = $2, updated_at = now()
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, room_id, team_id, label, pos_x, pos_y, created_at, updated_at, deleted_at, assigned_user_id
+`
+
+type AssignSeatParams struct {
+	ID             uuid.UUID   `db:"id" json:"id"`
+	AssignedUserID pgtype.UUID `db:"assigned_user_id" json:"assigned_user_id"`
+}
+
+func (q *Queries) AssignSeat(ctx context.Context, arg AssignSeatParams) (Seat, error) {
+	row := q.db.QueryRow(ctx, assignSeat, arg.ID, arg.AssignedUserID)
+	var i Seat
+	err := row.Scan(
+		&i.ID,
+		&i.RoomID,
+		&i.TeamID,
+		&i.Label,
+		&i.PosX,
+		&i.PosY,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.AssignedUserID,
+	)
+	return i, err
+}
+
 const createSeat = `-- name: CreateSeat :one
-INSERT INTO seats (room_id, team_id, label, pos_x, pos_y)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, room_id, team_id, label, pos_x, pos_y, created_at, updated_at, deleted_at
+INSERT INTO seats (room_id, team_id, label, pos_x, pos_y, assigned_user_id)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, room_id, team_id, label, pos_x, pos_y, created_at, updated_at, deleted_at, assigned_user_id
 `
 
 type CreateSeatParams struct {
-	RoomID uuid.UUID `db:"room_id" json:"room_id"`
-	TeamID uuid.UUID `db:"team_id" json:"team_id"`
-	Label  string    `db:"label" json:"label"`
-	PosX   int32     `db:"pos_x" json:"pos_x"`
-	PosY   int32     `db:"pos_y" json:"pos_y"`
+	RoomID         uuid.UUID   `db:"room_id" json:"room_id"`
+	TeamID         uuid.UUID   `db:"team_id" json:"team_id"`
+	Label          string      `db:"label" json:"label"`
+	PosX           int32       `db:"pos_x" json:"pos_x"`
+	PosY           int32       `db:"pos_y" json:"pos_y"`
+	AssignedUserID pgtype.UUID `db:"assigned_user_id" json:"assigned_user_id"`
 }
 
 func (q *Queries) CreateSeat(ctx context.Context, arg CreateSeatParams) (Seat, error) {
@@ -32,6 +63,7 @@ func (q *Queries) CreateSeat(ctx context.Context, arg CreateSeatParams) (Seat, e
 		arg.Label,
 		arg.PosX,
 		arg.PosY,
+		arg.AssignedUserID,
 	)
 	var i Seat
 	err := row.Scan(
@@ -44,12 +76,35 @@ func (q *Queries) CreateSeat(ctx context.Context, arg CreateSeatParams) (Seat, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.AssignedUserID,
+	)
+	return i, err
+}
+
+const getSeatByAssignedUser = `-- name: GetSeatByAssignedUser :one
+SELECT id, room_id, team_id, label, pos_x, pos_y, created_at, updated_at, deleted_at, assigned_user_id FROM seats WHERE assigned_user_id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) GetSeatByAssignedUser(ctx context.Context, assignedUserID pgtype.UUID) (Seat, error) {
+	row := q.db.QueryRow(ctx, getSeatByAssignedUser, assignedUserID)
+	var i Seat
+	err := row.Scan(
+		&i.ID,
+		&i.RoomID,
+		&i.TeamID,
+		&i.Label,
+		&i.PosX,
+		&i.PosY,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.AssignedUserID,
 	)
 	return i, err
 }
 
 const getSeatByID = `-- name: GetSeatByID :one
-SELECT id, room_id, team_id, label, pos_x, pos_y, created_at, updated_at, deleted_at FROM seats WHERE id = $1 AND deleted_at IS NULL
+SELECT id, room_id, team_id, label, pos_x, pos_y, created_at, updated_at, deleted_at, assigned_user_id FROM seats WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetSeatByID(ctx context.Context, id uuid.UUID) (Seat, error) {
@@ -65,12 +120,13 @@ func (q *Queries) GetSeatByID(ctx context.Context, id uuid.UUID) (Seat, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.AssignedUserID,
 	)
 	return i, err
 }
 
 const listSeatsByRoom = `-- name: ListSeatsByRoom :many
-SELECT id, room_id, team_id, label, pos_x, pos_y, created_at, updated_at, deleted_at FROM seats WHERE room_id = $1 AND deleted_at IS NULL ORDER BY pos_y, pos_x
+SELECT id, room_id, team_id, label, pos_x, pos_y, created_at, updated_at, deleted_at, assigned_user_id FROM seats WHERE room_id = $1 AND deleted_at IS NULL ORDER BY pos_y, pos_x
 `
 
 func (q *Queries) ListSeatsByRoom(ctx context.Context, roomID uuid.UUID) ([]Seat, error) {
@@ -92,6 +148,7 @@ func (q *Queries) ListSeatsByRoom(ctx context.Context, roomID uuid.UUID) ([]Seat
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.AssignedUserID,
 		); err != nil {
 			return nil, err
 		}
@@ -121,11 +178,35 @@ func (q *Queries) SoftDeleteSeatsByRoom(ctx context.Context, roomID uuid.UUID) e
 	return err
 }
 
+const unassignSeat = `-- name: UnassignSeat :one
+UPDATE seats SET assigned_user_id = NULL, updated_at = now()
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, room_id, team_id, label, pos_x, pos_y, created_at, updated_at, deleted_at, assigned_user_id
+`
+
+func (q *Queries) UnassignSeat(ctx context.Context, id uuid.UUID) (Seat, error) {
+	row := q.db.QueryRow(ctx, unassignSeat, id)
+	var i Seat
+	err := row.Scan(
+		&i.ID,
+		&i.RoomID,
+		&i.TeamID,
+		&i.Label,
+		&i.PosX,
+		&i.PosY,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.AssignedUserID,
+	)
+	return i, err
+}
+
 const updateSeat = `-- name: UpdateSeat :one
 UPDATE seats
 SET label = $2, pos_x = $3, pos_y = $4, updated_at = now()
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, room_id, team_id, label, pos_x, pos_y, created_at, updated_at, deleted_at
+RETURNING id, room_id, team_id, label, pos_x, pos_y, created_at, updated_at, deleted_at, assigned_user_id
 `
 
 type UpdateSeatParams struct {
@@ -153,6 +234,7 @@ func (q *Queries) UpdateSeat(ctx context.Context, arg UpdateSeatParams) (Seat, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.AssignedUserID,
 	)
 	return i, err
 }
@@ -161,7 +243,7 @@ const updateSeatFull = `-- name: UpdateSeatFull :one
 UPDATE seats
 SET label = $2, team_id = $3, pos_x = $4, pos_y = $5, updated_at = now()
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, room_id, team_id, label, pos_x, pos_y, created_at, updated_at, deleted_at
+RETURNING id, room_id, team_id, label, pos_x, pos_y, created_at, updated_at, deleted_at, assigned_user_id
 `
 
 type UpdateSeatFullParams struct {
@@ -191,6 +273,7 @@ func (q *Queries) UpdateSeatFull(ctx context.Context, arg UpdateSeatFullParams) 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.AssignedUserID,
 	)
 	return i, err
 }

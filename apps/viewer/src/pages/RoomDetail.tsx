@@ -6,6 +6,7 @@ import {
   useReservationsByDate,
   useCreateReservation,
   useCancelReservation,
+  useAdminCreateReservation,
   useCreateCrossTeamRequest,
   useTeams,
   useUsers,
@@ -65,6 +66,7 @@ const RoomDetail: Component = () => {
 
   const createReservation = useCreateReservation();
   const cancelReservation = useCancelReservation();
+  const adminCreateReservation = useAdminCreateReservation();
   const createCrossTeamRequest = useCreateCrossTeamRequest();
 
   const currentUserId = () => {
@@ -72,6 +74,17 @@ const RoomDetail: Component = () => {
     catch { return ''; }
   };
   const currentUser = createMemo(() => allUsers.data?.find((u) => u.id === currentUserId()));
+
+  const isAdminUser = createMemo(() => {
+    const role = currentUser()?.role;
+    return role === 'superadmin' || role === 'team_admin';
+  });
+
+  const teamMembers = createMemo(() => {
+    const teamId = currentUser()?.team_id;
+    if (!teamId) return [];
+    return allUsers.data?.filter((u) => u.team_id === teamId) ?? [];
+  });
 
   const teamColorMap = createMemo(() => {
     const map = new Map<string, number>();
@@ -202,6 +215,10 @@ const RoomDetail: Component = () => {
             <div class="w-3.5 h-3.5 rounded border border-gray-300 bg-gray-100" />
             <span class="text-gray-600">Reserved</span>
           </div>
+          <div class="flex items-center gap-1.5">
+            <div class="w-3.5 h-3.5 rounded border border-purple-400 bg-purple-200" />
+            <span class="text-gray-600">Permanent Seat</span>
+          </div>
         </div>
 
         <div class="overflow-auto bg-white flex items-center justify-center p-8" style={{ 'min-height': '400px' }}>
@@ -227,10 +244,17 @@ const RoomDetail: Component = () => {
                   const ownTeam = isOwnTeam(seat);
 
                   let stateClass: string;
+                  const isPermanentAssigned = !!seat.assigned_user_id;
+                  const isMyPermanentSeat = isPermanentAssigned && seat.assigned_user_id === currentUserId();
+
                   if (isReservedByMe) {
                     stateClass = 'bg-blue-200 border-blue-400 ring-2 ring-blue-300';
                   } else if (isReserved) {
                     stateClass = 'bg-gray-100 border-gray-300 opacity-60';
+                  } else if (isMyPermanentSeat) {
+                    stateClass = 'bg-purple-200 border-purple-400 ring-2 ring-purple-300';
+                  } else if (isPermanentAssigned) {
+                    stateClass = 'bg-purple-100 border-purple-300 opacity-60';
                   } else if (!ownTeam && currentUserId()) {
                     stateClass = `${colors.cellBg} ${colors.border} opacity-70`;
                   } else {
@@ -252,18 +276,23 @@ const RoomDetail: Component = () => {
                       onClick={() => {
                         if (!currentUserId()) return;
                         if (isReserved && !isReservedByMe) return;
+                        if (isPermanentAssigned && !isMyPermanentSeat) return;
                         setShowConfirm(seat);
                       }}
                     >
                       <div class={`w-full h-full rounded-md flex items-center justify-center ${stateClass}`}>
                         <span class="text-[10px] font-bold leading-tight text-center px-0.5"
                           classList={{
-                            'text-gray-700': !isReserved,
-                            'text-gray-400': isReserved && !isReservedByMe,
+                            'text-gray-700': !isReserved && !isPermanentAssigned,
+                            'text-gray-400': !isReservedByMe && (isReserved || (isPermanentAssigned && !isMyPermanentSeat)),
                             'text-blue-800': isReservedByMe,
+                            'text-purple-800': isMyPermanentSeat,
                           }}
                         >
                           {seat.label}
+                          <Show when={isPermanentAssigned}>
+                            <br /><span class="text-[7px] font-normal">{isMyPermanentSeat ? 'Your seat' : 'Assigned'}</span>
+                          </Show>
                         </span>
                       </div>
                     </div>
@@ -285,16 +314,33 @@ const RoomDetail: Component = () => {
         {(seat) => {
           const ownTeam = isOwnTeam(seat());
           const isReservedByMe = myReservedSeatIds().has(seat().id);
+          const isAdminReserve = ownTeam && !isReservedByMe && isAdminUser();
+          const [adminTargetUserId, setAdminTargetUserId] = createSignal('');
           return (
             <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowConfirm(null)}>
               <div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
                 <h3 class="text-lg font-bold text-gray-900 mb-2">
-                  {isReservedByMe ? 'Cancel Reservation?' : ownTeam ? 'Reserve Seat' : 'Request Seat'}
+                  {isReservedByMe ? 'Cancel Reservation?' : isAdminReserve ? 'Reserve for Team Member' : ownTeam ? 'Reserve Seat' : 'Request Seat'}
                 </h3>
                 <div class="space-y-2 mb-5 text-sm text-gray-600">
                   <p><span class="font-medium text-gray-900">Seat:</span> {seat().label}</p>
                   <p><span class="font-medium text-gray-900">Date:</span> {selectedDate()}</p>
                   <p><span class="font-medium text-gray-900">Team:</span> {teams.data?.find((t) => t.id === seat().team_id)?.name ?? 'Unknown'}</p>
+                  <Show when={isAdminReserve}>
+                    <div>
+                      <label class="block text-xs font-medium text-gray-500 mb-1">Reserve for</label>
+                      <select
+                        value={adminTargetUserId()}
+                        onChange={(e) => setAdminTargetUserId(e.currentTarget.value)}
+                        class="w-full border rounded-md px-2.5 py-1.5 text-sm"
+                      >
+                        <option value="">Select a team member...</option>
+                        <For each={teamMembers()}>
+                          {(u) => <option value={u.id!}>{u.name}</option>}
+                        </For>
+                      </select>
+                    </div>
+                  </Show>
                   <Show when={!ownTeam && !isReservedByMe}>
                     <div class="mt-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
                       This seat belongs to another team. A cross-team request will be sent for approval.
@@ -319,16 +365,24 @@ const RoomDetail: Component = () => {
                         }).catch((err) => {
                           setErrorMsg(err instanceof ApiError ? err.message : 'Failed to cancel');
                         });
+                      } else if (isAdminReserve && adminTargetUserId()) {
+                        adminCreateReservation.mutateAsync({ date: selectedDate(), seat_id: seat().id!, user_id: adminTargetUserId() }).then(() => {
+                          setShowConfirm(null);
+                          setSuccessMsg('Reservation created for team member!');
+                          setTimeout(() => setSuccessMsg(''), 3000);
+                        }).catch((err) => {
+                          setErrorMsg(err instanceof ApiError ? err.message : 'Failed to reserve');
+                        });
                       } else if (ownTeam) {
                         handleReserve(seat().id!);
                       } else {
                         handleCrossTeamRequest(seat().id!);
                       }
                     }}
-                    disabled={createReservation.isPending || cancelReservation.isPending || createCrossTeamRequest.isPending}
+                    disabled={createReservation.isPending || cancelReservation.isPending || createCrossTeamRequest.isPending || adminCreateReservation.isPending || (isAdminReserve && !adminTargetUserId())}
                     class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-sm"
                   >
-                    {createReservation.isPending || cancelReservation.isPending || createCrossTeamRequest.isPending ? 'Processing...' : 'Confirm'}
+                    {createReservation.isPending || cancelReservation.isPending || createCrossTeamRequest.isPending || adminCreateReservation.isPending ? 'Processing...' : 'Confirm'}
                   </button>
                 </div>
               </div>

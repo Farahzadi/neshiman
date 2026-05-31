@@ -92,6 +92,11 @@ func (s *ReservationService) reserveSeat(ctx context.Context, userID, seatID uui
 		return nil, domain.ErrSeatNotFound
 	}
 
+	// Check if seat is permanently assigned to another user
+	if seat.IsPermanentlyAssigned() && *seat.AssignedUserID != userID {
+		return nil, domain.ErrSeatPermanentlyAssigned
+	}
+
 	// Check if seat is already reserved for this date
 	existing, _ := s.reservations.GetBySeatAndDate(ctx, seatID, date)
 	if existing != nil {

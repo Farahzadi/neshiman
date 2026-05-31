@@ -22,6 +22,20 @@ function ProtectedRoute(props: { children: any }) {
   return props.children;
 }
 
+function AdminRoute(props: { children: any }) {
+  const token = localStorage.getItem('neshiman_token');
+  if (!token) {
+    return <Navigate href="/login" />;
+  }
+  try {
+    const user = JSON.parse(localStorage.getItem('neshiman_user') ?? 'null');
+    if (user && (user.role === 'superadmin' || user.role === 'team_admin')) {
+      return props.children;
+    }
+  } catch { /* redirect viewer */ }
+  return <Navigate href="/" />;
+}
+
 const RootLayout: Component<RouteSectionProps> = (props) => {
   if (props.location.pathname === '/login') {
     return <>{props.children}</>;
@@ -39,7 +53,7 @@ const App: Component = () => {
         <Route path="/rooms" component={() => <ProtectedRoute><Rooms /></ProtectedRoute>} />
         <Route path="/rooms/:id" component={() => <ProtectedRoute><RoomDetail /></ProtectedRoute>} />
         <Route path="/reservations" component={() => <ProtectedRoute><Reservations /></ProtectedRoute>} />
-        <Route path="/requests" component={() => <ProtectedRoute><CrossTeamRequests /></ProtectedRoute>} />
+        <Route path="/requests" component={() => <AdminRoute><CrossTeamRequests /></AdminRoute>} />
       </Router>
       {import.meta.env.DEV && <Devtools />}
     </Providers>

@@ -42,15 +42,16 @@ type Room struct {
 }
 
 type Seat struct {
-	ID        uuid.UUID          `db:"id" json:"id"`
-	RoomID    uuid.UUID          `db:"room_id" json:"room_id"`
-	TeamID    uuid.UUID          `db:"team_id" json:"team_id"`
-	Label     string             `db:"label" json:"label"`
-	PosX      int32              `db:"pos_x" json:"pos_x"`
-	PosY      int32              `db:"pos_y" json:"pos_y"`
-	CreatedAt time.Time          `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time          `db:"updated_at" json:"updated_at"`
-	DeletedAt pgtype.Timestamptz `db:"deleted_at" json:"deleted_at"`
+	ID             uuid.UUID          `db:"id" json:"id"`
+	RoomID         uuid.UUID          `db:"room_id" json:"room_id"`
+	TeamID         uuid.UUID          `db:"team_id" json:"team_id"`
+	Label          string             `db:"label" json:"label"`
+	PosX           int32              `db:"pos_x" json:"pos_x"`
+	PosY           int32              `db:"pos_y" json:"pos_y"`
+	CreatedAt      time.Time          `db:"created_at" json:"created_at"`
+	UpdatedAt      time.Time          `db:"updated_at" json:"updated_at"`
+	DeletedAt      pgtype.Timestamptz `db:"deleted_at" json:"deleted_at"`
+	AssignedUserID pgtype.UUID        `db:"assigned_user_id" json:"assigned_user_id"`
 }
 
 type Team struct {

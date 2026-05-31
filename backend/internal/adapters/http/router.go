@@ -32,7 +32,7 @@ func newRouter(
 	roomHandler := handlers.NewRoomHandler(roomSvc)
 	reservationHandler := handlers.NewReservationHandler(reservationSvc)
 	teamHandler := handlers.NewTeamHandler(teamSvc)
-	seatHandler := handlers.NewSeatHandler(seatSvc)
+	seatHandler := handlers.NewSeatHandler(seatSvc, userSvc)
 	userHandler := handlers.NewUserHandler(userSvc)
 	crossTeamRequestHandler := handlers.NewCrossTeamRequestHandler(crossTeamRequestSvc)
 	authHandler := handlers.NewAuthHandler(authSvc)
@@ -58,6 +58,11 @@ func newRouter(
 				r.Get("/{id}", seatHandler.GetByID)
 				r.Put("/{id}/move", seatHandler.Move)
 				r.Delete("/{id}", seatHandler.Delete)
+				r.Group(func(r chi.Router) {
+					r.Use(middleware.RequireRole("superadmin"))
+					r.Post("/{id}/assign", seatHandler.AssignUser)
+					r.Delete("/{id}/assign", seatHandler.UnassignUser)
+				})
 			})
 
 					r.Route("/teams", func(r chi.Router) {

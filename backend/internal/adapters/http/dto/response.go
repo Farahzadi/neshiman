@@ -45,22 +45,25 @@ func TeamToResponse(team *domain.Team) TeamResponse {
 }
 
 type SeatResponse struct {
-	ID     uuid.UUID `json:"id"`
-	RoomID uuid.UUID `json:"room_id"`
-	TeamID uuid.UUID `json:"team_id"`
-	Label  string    `json:"label"`
-	PosX   int       `json:"pos_x"`
-	PosY   int       `json:"pos_y"`
+	ID              uuid.UUID  `json:"id"`
+	RoomID          uuid.UUID  `json:"room_id"`
+	TeamID          uuid.UUID  `json:"team_id"`
+	Label           string     `json:"label"`
+	PosX            int        `json:"pos_x"`
+	PosY            int        `json:"pos_y"`
+	AssignedUserID  *uuid.UUID `json:"assigned_user_id"`
+	AssignedUserName string    `json:"assigned_user_name,omitempty"`
 }
 
 func SeatToResponse(seat *domain.Seat) SeatResponse {
 	return SeatResponse{
-		ID:     seat.ID,
-		RoomID: seat.RoomID,
-		TeamID: seat.TeamID,
-		Label:  seat.Label,
-		PosX:   seat.Position.X,
-		PosY:   seat.Position.Y,
+		ID:             seat.ID,
+		RoomID:         seat.RoomID,
+		TeamID:         seat.TeamID,
+		Label:          seat.Label,
+		PosX:           seat.Position.X,
+		PosY:           seat.Position.Y,
+		AssignedUserID: seat.AssignedUserID,
 	}
 }
 

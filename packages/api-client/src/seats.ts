@@ -58,6 +58,32 @@ export function useMoveSeat() {
   }));
 }
 
+type AssignSeatRequest = definitions['dto.AssignSeatRequest'];
+
+export function useAssignSeat() {
+  const qc = useQueryClient();
+  return useMutation(() => ({
+    mutationFn: ({ id, data }: { id: string; data: AssignSeatRequest }) =>
+      apiFetch<Seat>(`/v1/seats/${id}/assign`, { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: (seat) => {
+      qc.invalidateQueries({ queryKey: queryKeys.rooms.seats(seat.room_id!) });
+      qc.invalidateQueries({ queryKey: queryKeys.seats.detail(seat.id!) });
+    },
+  }));
+}
+
+export function useUnassignSeat() {
+  const qc = useQueryClient();
+  return useMutation(() => ({
+    mutationFn: (id: string) =>
+      apiFetch<Seat>(`/v1/seats/${id}/assign`, { method: 'DELETE' }),
+    onSuccess: (seat) => {
+      qc.invalidateQueries({ queryKey: queryKeys.rooms.seats(seat.room_id!) });
+      qc.invalidateQueries({ queryKey: queryKeys.seats.detail(seat.id!) });
+    },
+  }));
+}
+
 export function useBulkSyncSeats() {
   const qc = useQueryClient();
   return useMutation(() => ({

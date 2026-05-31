@@ -134,3 +134,30 @@ Replace stub auth with real JWT-based authentication.
 - [x] **CI pipeline** — `.github/workflows/ci.yml` runs backend tests (with Postgres service), frontend typecheck/lint/build, then Docker push on main
 - [x] **README** — Architecture diagram, quick start, monorepo layout, deployment guide, API reference
 - [x] **`.env.example`** — Template for required production env vars
+
+## Phase 9 — Permanent Seat Assignment
+
+Allow superadmins to permanently assign a seat to a user. The seat is always reserved to that user — no daily reservation needed, doesn't count toward weekly limit. One seat per user.
+
+- [ ] **Migration** — Add `assigned_user_id UUID REFERENCES users(id)` column to `seats` table with partial unique index (`WHERE assigned_user_id IS NOT NULL AND deleted_at IS NULL`)
+- [ ] **Domain** — Add `AssignedUserID *uuid.UUID` to `Seat`; add `ErrSeatPermanentlyAssigned`, `ErrUserAlreadyAssigned` errors
+- [ ] **sqlc** — Add `assigned_user_id` to all seat queries; add `GetSeatByAssignedUser`
+- [ ] **Seat repository** — Add `GetByAssignedUser(ctx, userID)` to interface + postgres implementation
+- [ ] **Seat service** — Add `AssignUser()` (superadmin only, one-per-user check) and `UnassignUser()` methods
+- [ ] **Reservation service** — Block all reservations on permanently assigned seats (`ErrSeatPermanentlyAssigned`)
+- [ ] **HTTP handlers** — Add `POST /seats/{id}/assign` and `DELETE /seats/{id}/assign` routes (superadmin only)
+- [ ] **DTOs** — Add `AssignedUserID`, `AssignedUserName` to `SeatResponse`; add `AssignSeatRequest`
+- [ ] **API client** — Add `useAssignSeat()`, `useUnassignSeat()` hooks
+- [ ] **Admin Room Editor** — Properties panel shows assigned user dropdown + unassign button (superadmin only)
+- [ ] **Viewer RoomDetail** — Show permanently assigned seats as locked with user name; no click action
+- [ ] **Viewer WeeklyCalendar** — Same treatment: permanently assigned cells show user name, locked
+
+## Phase 10 — Viewer Calendar Enhancements & Cross-Team Management
+
+Improve the viewer weekly calendar and cross-team requests page with today highlight, team admin reservation delegation, and role-based access.
+
+- [ ] **Calendar today highlight** — Add light blue background to today's column header and data cells in weekly calendar view
+- [ ] **Team admin reserve for others** — Show user dropdown in confirm modal for team admins to reserve seats on behalf of team members via `POST /reservations/admin`
+- [ ] **Hide Requests from viewers** — Conditionally show "Requests" nav item only for team_admin/superadmin in viewer Layout
+- [ ] **Team-filtered requests** — For team admins, filter cross-team requests list to only show requests where the seat belongs to their team
+- [ ] **Approve/reject for team admins** — Add approve/reject buttons to viewer CrossTeamRequests page for pending requests to the admin's team

@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
 	"neshiman/backend/internal/adapters/http/dto"
+	"neshiman/backend/internal/adapters/http/middleware"
 	"neshiman/backend/internal/application"
 	"neshiman/backend/internal/domain"
 
@@ -14,10 +16,29 @@ import (
 
 type SeatHandler struct {
 	seatSvc *application.SeatService
+	userSvc *application.UserService
 }
 
-func NewSeatHandler(seatSvc *application.SeatService) *SeatHandler {
-	return &SeatHandler{seatSvc: seatSvc}
+func NewSeatHandler(seatSvc *application.SeatService, userSvc *application.UserService) *SeatHandler {
+	return &SeatHandler{seatSvc: seatSvc, userSvc: userSvc}
+}
+
+func (h *SeatHandler) enrichSeatResponse(ctx context.Context, seat *domain.Seat) dto.SeatResponse {
+	resp := dto.SeatToResponse(seat)
+	if seat.AssignedUserID != nil && h.userSvc != nil {
+		if user, err := h.userSvc.GetUser(ctx, *seat.AssignedUserID); err == nil {
+			resp.AssignedUserName = user.Name
+		}
+	}
+	return resp
+}
+
+func (h *SeatHandler) enrichSeatListResponse(ctx context.Context, seats []domain.Seat) []dto.SeatResponse {
+	responses := make([]dto.SeatResponse, len(seats))
+	for i, seat := range seats {
+		responses[i] = h.enrichSeatResponse(ctx, &seat)
+	}
+	return responses
 }
 
 // CreateSeat creates a new seat
@@ -50,7 +71,7 @@ func (h *SeatHandler) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	writeJSON(w, http.StatusCreated, dto.SeatToResponse(seat))
+	writeJSON(w, http.StatusCreated, h.enrichSeatResponse(r.Context(), seat))
 }
 
 // GetSeatByID returns a seat by ID
@@ -72,7 +93,7 @@ func (h *SeatHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	writeJSON(w, http.StatusOK, dto.SeatToResponse(seat))
+	writeJSON(w, http.StatusOK, h.enrichSeatResponse(r.Context(), seat))
 }
 
 // ListSeatsByRoom lists seats for a room
@@ -98,7 +119,7 @@ func (h *SeatHandler) ListByRoom(w http.ResponseWriter, r *http.Request) {
 	for i, seat := range seats {
 		responses[i] = dto.SeatToResponse(&seat)
 	}
-	writeJSON(w, http.StatusOK, responses)
+	writeJSON(w, http.StatusOK, h.enrichSeatListResponse(r.Context(), seats))
 }
 
 // MoveSeat moves a seat to a new position
@@ -127,7 +148,7 @@ func (h *SeatHandler) Move(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	writeJSON(w, http.StatusOK, dto.SeatToResponse(seat))
+	writeJSON(w, http.StatusOK, h.enrichSeatResponse(r.Context(), seat))
 }
 
 // BulkSyncSeats syncs the full list of seats for a room
@@ -182,7 +203,7 @@ func (h *SeatHandler) BulkSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, dto.BulkSyncSeatsResponse{
-		Seats: dto.SeatListToResponse(result),
+		Seats: h.enrichSeatListResponse(r.Context(), result),
 	})
 }
 
@@ -203,4 +224,72 @@ func (h *SeatHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// AssignUser permanently assigns a user to a seat (superadmin only)
+// @Summary      Assign a user to a seat permanently
+// @Tags         Seats
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string                   true  "Seat ID"
+// @Param        request  body      dto.AssignSeatRequest     true  "User ID to assign"
+// @Success      200      {object}  dto.SeatResponse
+// @Failure      400      {string}  string
+// @Failure      403      {string}  string
+// @Router       /seats/{id}/assign [post]
+func (h *SeatHandler) AssignUser(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid seat id", http.StatusBadRequest)
+		return
+	}
+	var req dto.AssignSeatRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	userID, err := uuid.Parse(req.UserID)
+	if err != nil {
+		http.Error(w, "invalid user_id", http.StatusBadRequest)
+		return
+	}
+	callerID := middleware.UserIDFromContext(r.Context())
+	seat, err := h.seatSvc.AssignUser(r.Context(), callerID, id, userID)
+	if err != nil {
+		if err == domain.ErrForbidden {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, http.StatusOK, h.enrichSeatResponse(r.Context(), seat))
+}
+
+// UnassignUser removes permanent user assignment from a seat (superadmin only)
+// @Summary      Remove permanent user assignment from a seat
+// @Tags         Seats
+// @Produce      json
+// @Param        id   path      string  true  "Seat ID"
+// @Success      200  {object}  dto.SeatResponse
+// @Failure      400  {string}  string
+// @Failure      403  {string}  string
+// @Router       /seats/{id}/assign [delete]
+func (h *SeatHandler) UnassignUser(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid seat id", http.StatusBadRequest)
+		return
+	}
+	callerID := middleware.UserIDFromContext(r.Context())
+	seat, err := h.seatSvc.UnassignUser(r.Context(), callerID, id)
+	if err != nil {
+		if err == domain.ErrForbidden {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, http.StatusOK, h.enrichSeatResponse(r.Context(), seat))
 }

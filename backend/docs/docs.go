@@ -948,6 +948,96 @@ const docTemplate = `{
                 }
             }
         },
+        "/seats/{id}/assign": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seats"
+                ],
+                "summary": "Assign a user to a seat permanently",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Seat ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "User ID to assign",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AssignSeatRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SeatResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seats"
+                ],
+                "summary": "Remove permanent user assignment from a seat",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Seat ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SeatResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/seats/{id}/move": {
             "put": {
                 "consumes": [
@@ -1504,6 +1594,14 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.AssignSeatRequest": {
+            "type": "object",
+            "properties": {
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.BulkSeatItem": {
             "type": "object",
             "properties": {
@@ -1762,6 +1860,12 @@ const docTemplate = `{
         "dto.SeatResponse": {
             "type": "object",
             "properties": {
+                "assigned_user_id": {
+                    "type": "string"
+                },
+                "assigned_user_name": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },

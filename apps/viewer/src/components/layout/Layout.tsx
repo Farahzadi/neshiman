@@ -3,14 +3,6 @@ import { A, useNavigate } from '@solidjs/router';
 import type { RouteSectionProps } from '@solidjs/router';
 import { setAuthHeader } from '@neshiman/api-client';
 
-const navItems = [
-  { href: '/', label: 'Calendar' },
-  { href: '/overview', label: 'Dashboard' },
-  { href: '/rooms', label: 'Rooms' },
-  { href: '/reservations', label: 'Reservations' },
-  { href: '/requests', label: 'Requests' },
-];
-
 function getUser() {
   try {
     const raw = localStorage.getItem('neshiman_user');
@@ -18,10 +10,28 @@ function getUser() {
   } catch { return null; }
 }
 
+function isAdminRole(role: string): boolean {
+  return role === 'superadmin' || role === 'team_admin';
+}
+
 const Layout: Component<RouteSectionProps> = (props) => {
   const navigate = useNavigate();
 
   const currentUser = createMemo(() => getUser());
+
+  const navItems = createMemo(() => {
+    const user = currentUser();
+    const items = [
+      { href: '/', label: 'Calendar' },
+      { href: '/overview', label: 'Dashboard' },
+      { href: '/rooms', label: 'Rooms' },
+      { href: '/reservations', label: 'Reservations' },
+    ];
+    if (user && isAdminRole(user.role)) {
+      items.push({ href: '/requests', label: 'Requests' });
+    }
+    return items;
+  });
 
   const handleLogout = () => {
     localStorage.removeItem('neshiman_token');
@@ -43,7 +53,7 @@ const Layout: Component<RouteSectionProps> = (props) => {
                 <span>Neshiman</span>
               </A>
               <nav class="hidden md:flex items-center gap-1">
-                <For each={navItems}>
+                <For each={navItems()}>
                   {(item) => (
                     <A
                       href={item.href}

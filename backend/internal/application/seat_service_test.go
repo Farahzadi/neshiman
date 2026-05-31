@@ -20,7 +20,7 @@ func TestSeatService_CreateSeat(t *testing.T) {
 				saved = s
 				return nil
 			},
-		})
+		}, &mockUserRepo{})
 
 		seat, err := svc.CreateSeat(context.Background(), roomID, teamID, "A1", 5, 3)
 		if err != nil {
@@ -39,7 +39,7 @@ func TestSeatService_CreateSeat(t *testing.T) {
 			createFn: func(_ context.Context, _ *domain.Seat) error {
 				return errors.New("db error")
 			},
-		})
+		}, &mockUserRepo{})
 		_, err := svc.CreateSeat(context.Background(), roomID, teamID, "X", 1, 1)
 		if err == nil || err.Error() != "db error" {
 			t.Errorf("got %v, want db error", err)
@@ -59,7 +59,7 @@ func TestSeatService_MoveSeat(t *testing.T) {
 			}
 			return nil
 		},
-	})
+	}, &mockUserRepo{})
 
 	seat, err := svc.MoveSeat(context.Background(), id, 10, 20)
 	if err != nil {
@@ -79,7 +79,7 @@ func TestSeatService_GetSeat(t *testing.T) {
 			}
 			return &domain.Seat{ID: id, Label: "Found"}, nil
 		},
-	})
+	}, &mockUserRepo{})
 
 	seat, err := svc.GetSeat(context.Background(), id)
 	if err != nil {
@@ -99,7 +99,7 @@ func TestSeatService_ListSeatsByRoom(t *testing.T) {
 			}
 			return []domain.Seat{{Label: "A1"}, {Label: "A2"}}, nil
 		},
-	})
+	}, &mockUserRepo{})
 
 	seats, err := svc.ListSeatsByRoom(context.Background(), roomID)
 	if err != nil {
@@ -129,7 +129,7 @@ func TestSeatService_BulkSyncSeats(t *testing.T) {
 					{ID: uuid.New(), RoomID: roomID, TeamID: teamID, Label: "B2", Position: domain.Position{X: 3, Y: 5}},
 				}, nil
 			},
-		})
+		}, &mockUserRepo{})
 
 		seats := []domain.Seat{
 			{ID: existingID, TeamID: teamID, Label: "A1", Position: domain.Position{X: 0, Y: 0}},
@@ -149,7 +149,7 @@ func TestSeatService_BulkSyncSeats(t *testing.T) {
 			bulkSyncFn: func(_ context.Context, _ uuid.UUID, _ []domain.Seat) ([]domain.Seat, error) {
 				return nil, errors.New("db error")
 			},
-		})
+		}, &mockUserRepo{})
 		seats := []domain.Seat{
 			{TeamID: teamID, Label: "A1", Position: domain.Position{X: 0, Y: 0}},
 		}
@@ -168,7 +168,7 @@ func TestSeatService_DeleteSeat(t *testing.T) {
 			deleted = got
 			return nil
 		},
-	})
+	}, &mockUserRepo{})
 
 	if err := svc.DeleteSeat(context.Background(), id); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -176,4 +176,151 @@ func TestSeatService_DeleteSeat(t *testing.T) {
 	if deleted != id {
 		t.Errorf("got %v, want %v", deleted, id)
 	}
+}
+
+func TestSeatService_AssignUser(t *testing.T) {
+	seatID := uuid.New()
+	userID := uuid.New()
+	superadminID := uuid.New()
+
+	t.Run("success", func(t *testing.T) {
+		svc := NewSeatService(&mockSeatRepo{
+			getByAssignedUserFn: func(_ context.Context, _ uuid.UUID) (*domain.Seat, error) {
+				return nil, domain.ErrSeatNotFound
+			},
+			getByIDFn: func(_ context.Context, _ uuid.UUID) (*domain.Seat, error) {
+				return &domain.Seat{ID: seatID}, nil
+			},
+			assignUserFn: func(_ context.Context, sid, uid uuid.UUID) (*domain.Seat, error) {
+				if sid != seatID || uid != userID {
+					t.Errorf("got seat=%v user=%v, want seat=%v user=%v", sid, uid, seatID, userID)
+				}
+				return &domain.Seat{ID: seatID, AssignedUserID: &uid}, nil
+			},
+		}, &mockUserRepo{
+			getByIDFn: func(_ context.Context, id uuid.UUID) (*domain.User, error) {
+				if id == superadminID {
+					return &domain.User{ID: superadminID, Role: domain.RoleSuperAdmin}, nil
+				}
+				return &domain.User{ID: userID, Role: domain.RoleViewer}, nil
+			},
+		})
+
+		seat, err := svc.AssignUser(context.Background(), superadminID, seatID, userID)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if seat.AssignedUserID == nil || *seat.AssignedUserID != userID {
+			t.Error("seat should be assigned to user")
+		}
+	})
+
+	t.Run("user not found", func(t *testing.T) {
+		svc := NewSeatService(&mockSeatRepo{
+			getByIDFn: func(_ context.Context, _ uuid.UUID) (*domain.Seat, error) {
+				return &domain.Seat{ID: seatID}, nil
+			},
+		}, &mockUserRepo{
+			getByIDFn: func(_ context.Context, id uuid.UUID) (*domain.User, error) {
+				if id == superadminID {
+					return &domain.User{ID: superadminID, Role: domain.RoleSuperAdmin}, nil
+				}
+				return nil, domain.ErrUserNotFound
+			},
+		})
+
+		_, err := svc.AssignUser(context.Background(), superadminID, seatID, userID)
+		if err != domain.ErrUserNotFound {
+			t.Errorf("got %v, want %v", err, domain.ErrUserNotFound)
+		}
+	})
+
+	t.Run("user already assigned to another seat", func(t *testing.T) {
+		svc := NewSeatService(&mockSeatRepo{
+			getByAssignedUserFn: func(_ context.Context, _ uuid.UUID) (*domain.Seat, error) {
+				otherID := uuid.New()
+				return &domain.Seat{ID: uuid.New(), AssignedUserID: &otherID}, nil
+			},
+		}, &mockUserRepo{
+			getByIDFn: func(_ context.Context, id uuid.UUID) (*domain.User, error) {
+				if id == superadminID {
+					return &domain.User{ID: superadminID, Role: domain.RoleSuperAdmin}, nil
+				}
+				return &domain.User{ID: userID, Role: domain.RoleViewer}, nil
+			},
+		})
+
+		_, err := svc.AssignUser(context.Background(), superadminID, seatID, userID)
+		if err != domain.ErrUserAlreadyAssigned {
+			t.Errorf("got %v, want %v", err, domain.ErrUserAlreadyAssigned)
+		}
+	})
+
+	t.Run("seat not found", func(t *testing.T) {
+		svc := NewSeatService(&mockSeatRepo{
+			getByAssignedUserFn: func(_ context.Context, _ uuid.UUID) (*domain.Seat, error) {
+				return nil, domain.ErrSeatNotFound
+			},
+			getByIDFn: func(_ context.Context, _ uuid.UUID) (*domain.Seat, error) {
+				return nil, domain.ErrSeatNotFound
+			},
+		}, &mockUserRepo{
+			getByIDFn: func(_ context.Context, id uuid.UUID) (*domain.User, error) {
+				if id == superadminID {
+					return &domain.User{ID: superadminID, Role: domain.RoleSuperAdmin}, nil
+				}
+				return &domain.User{ID: userID, Role: domain.RoleViewer}, nil
+			},
+		})
+
+		_, err := svc.AssignUser(context.Background(), superadminID, seatID, userID)
+		if err != domain.ErrSeatNotFound {
+			t.Errorf("got %v, want %v", err, domain.ErrSeatNotFound)
+		}
+	})
+}
+
+func TestSeatService_UnassignUser(t *testing.T) {
+	seatID := uuid.New()
+	superadminID := uuid.New()
+
+	t.Run("success", func(t *testing.T) {
+		svc := NewSeatService(&mockSeatRepo{
+			unassignUserFn: func(_ context.Context, sid uuid.UUID) (*domain.Seat, error) {
+				if sid != seatID {
+					t.Errorf("got %v, want %v", sid, seatID)
+				}
+				return &domain.Seat{ID: seatID}, nil
+			},
+		}, &mockUserRepo{
+			getByIDFn: func(_ context.Context, id uuid.UUID) (*domain.User, error) {
+				return &domain.User{ID: id, Role: domain.RoleSuperAdmin}, nil
+			},
+		})
+
+		seat, err := svc.UnassignUser(context.Background(), superadminID, seatID)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if seat.AssignedUserID != nil {
+			t.Error("seat should not have assigned user")
+		}
+	})
+
+	t.Run("seat not found", func(t *testing.T) {
+		svc := NewSeatService(&mockSeatRepo{
+			unassignUserFn: func(_ context.Context, _ uuid.UUID) (*domain.Seat, error) {
+				return nil, domain.ErrSeatNotFound
+			},
+		}, &mockUserRepo{
+			getByIDFn: func(_ context.Context, id uuid.UUID) (*domain.User, error) {
+				return &domain.User{ID: id, Role: domain.RoleSuperAdmin}, nil
+			},
+		})
+
+		_, err := svc.UnassignUser(context.Background(), superadminID, seatID)
+		if err != domain.ErrSeatNotFound {
+			t.Errorf("got %v, want %v", err, domain.ErrSeatNotFound)
+		}
+	})
 }
