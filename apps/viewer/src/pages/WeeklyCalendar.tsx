@@ -1,4 +1,4 @@
-import { Component, createMemo, createSignal, For, Show } from 'solid-js';
+import { Component, createEffect, createMemo, createSignal, For, Show } from 'solid-js';
 
 import { useQueryClient } from '@tanstack/solid-query';
 import {
@@ -14,13 +14,10 @@ import {
   ApiError,
 } from '@neshiman/api-client';
 import type { definitions } from '@neshiman/api-types';
+import { unwrap } from 'solid-js/store';
 
 type Seat = definitions['dto.SeatResponse'];
 
-
-const DAY_NAMES: Record<string, string> = {
-  sat: 'Sat', sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri',
-};
 
 const DAY_INDEX: Record<string, number> = {
   sat: 6, sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5,
@@ -234,6 +231,7 @@ const WeeklyCalendar: Component = () => {
   const reservationMapByDateSeat = createMemo(() => {
     const map = new Map<string, Map<string, definitions['dto.ReservationWithUserResponse']>>();
     for (const r of allReservations()) {
+      console.log(unwrap(r))
       if (!r.seat_id || !r.date) continue;
       if (!map.has(r.date)) map.set(r.date, new Map());
       map.get(r.date)!.set(r.seat_id, r);
@@ -434,7 +432,7 @@ const WeeklyCalendar: Component = () => {
                         classList={{ 'bg-blue-50 border-l-2 border-l-blue-400': isToday }}
                       >
                         <div class={`text-xs font-medium ${isToday ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
-                          {DAY_NAMES[Object.keys(DAY_NAMES)[day.getDay()]] ?? day.toLocaleDateString('en', { weekday: 'short' })}
+                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][day.getDay()]}
                         </div>
                         <div class={`text-sm font-bold ${isToday ? 'text-blue-600' : 'text-gray-800'}`}>
                           {isToday ? (
